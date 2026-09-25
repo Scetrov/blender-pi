@@ -1,0 +1,67 @@
+{
+  "name": "@scetrov/blender-pi",
+  "version": "0.0.0",
+  "description": "Artist-approved Pi integration for a live Blender 5.2+ session",
+  "license": "MIT",
+  "author": "scetrov",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/scetrov/blender-pi.git"
+  },
+  "homepage": "https://github.com/scetrov/blender-pi#readme",
+  "bugs": {
+    "url": "https://github.com/scetrov/blender-pi/issues"
+  },
+  "keywords": [
+    "pi-package",
+    "blender",
+    "3d",
+    "artist-workflow"
+  ],
+  "engines": {
+    "node": ">=22.19.0"
+  },
+  "pi": {
+    "extensions": [
+      "./extensions/index.ts"
+    ],
+    "skills": [
+      "./skills"
+    ]
+  },
+  "files": [
+    "extensions/",
+    "skills/",
+    "bridge/",
+    "protocol/schemas/",
+    "docs/licensing.md",
+    "LICENSE",
+    "README.md"
+  ],
+  "scripts": {
+    "format": "biome format --write package.json biome.json tsconfig.json extensions protocol tests/unit",
+    "format:check": "biome format package.json biome.json tsconfig.json extensions protocol tests/unit",
+    "lint": "biome lint extensions protocol tests/unit",
+    "typecheck": "tsc --noEmit",
+    "test": "node --test tests/unit/*.test.mjs && python3 -m unittest discover -s tests -p 'test_*.py'",
+    "python:check": "python3 -m compileall -q bridge tests/prototypes",
+    "validate": "npm run format:check && npm run lint && npm run typecheck && npm run python:check && npm test",
+    "package:check": "npm pack --dry-run --json"
+  },
+  "peerDependencies": {
+    "@earendil-works/pi-coding-agent": "*",
+    "typebox": "*"
+  },
+  "peerDependenciesMeta": {
+    "@earendil-works/pi-coding-agent": {
+      "optional": true
+    },
+    "typebox": {
+      "optional": true
+    }
+  },
+  "devDependencies": {
+    "@biomejs/biome": "2.5.14",
+    "typescript": "7.0.2"
+  }
+}
