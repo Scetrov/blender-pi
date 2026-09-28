@@ -2,6 +2,7 @@
 
 import importlib.util
 import json
+import os
 from pathlib import Path
 import sys
 import time
@@ -44,8 +45,11 @@ try:
     # Evidence stays a bounded artifact, not unbounded inline image bytes.
     bpy.ops.object.camera_add(location=(0, -5, 3))
     bpy.context.scene.camera = bpy.context.object
-    image = addon.runtime.capture("workbench", 32, 24)
-    assert image["byteSize"] < 16 * 1024 * 1024 and image["capture"]["width"] == 32
+    if os.name == "nt" and os.environ.get("BLENDER_PI_CI_SKIP_GPU_CAPTURE") == "1":
+        print("HOSTED_WINDOWS_WORKBENCH_CAPTURE_NOT_VALIDATED", flush=True)
+    else:
+        image = addon.runtime.capture("workbench", 32, 24)
+        assert image["byteSize"] < 16 * 1024 * 1024 and image["capture"]["width"] == 32
     print(f"BLENDER_PERFORMANCE_IDLE_SECONDS={idle:.3f};SCENE_SECONDS={large_scene:.3f};PAGES={pages}")
     print("BLENDER_PERFORMANCE_OK", flush=True)
 finally:

@@ -67,6 +67,9 @@ jobs:
           TEST_PLATFORM: ${{ matrix.platform }}
           TEST_PYTHON: ${{ matrix.python }}
           TEST_BLENDER: ${{ matrix.blender }}
+          # Standard hosted Windows VMs lack a verified Workbench GPU context.
+          # The full capture assertion remains mandatory on Linux and local GPU runs.
+          BLENDER_PI_CI_SKIP_GPU_CAPTURE: ${{ runner.os == 'Windows' && '1' || '0' }}
         run: |
           "$TEST_PYTHON" scripts/acquire_blender.py "$TEST_PLATFORM" "$RUNNER_TEMP/blender-test"
           if [[ "$RUNNER_OS" == Linux ]]; then

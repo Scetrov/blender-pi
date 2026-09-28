@@ -113,9 +113,13 @@ try {
       + "bridge.set_result({'created': obj.name})", "high", "required");
   assert.ok(high.checkpoint?.checkpointId);
   assert.equal((await inspect()).objects.some((object) => object.name === "E2E after checkpoint"), true);
-  const capture = await session.call("scene.capture", { mode: "workbench", maxWidth: 32, maxHeight: 24 }, "inspection");
-  const png = readVerifiedArtifact(capture, dirname(capture.path));
-  assert.deepEqual([...png.subarray(0, 4)], [137, 80, 78, 71]);
+  if (process.platform === "win32" && process.env.BLENDER_PI_CI_SKIP_GPU_CAPTURE === "1") {
+    console.error("HOSTED_WINDOWS_WORKBENCH_CAPTURE_NOT_VALIDATED");
+  } else {
+    const capture = await session.call("scene.capture", { mode: "workbench", maxWidth: 32, maxHeight: 24 }, "inspection");
+    const png = readVerifiedArtifact(capture, dirname(capture.path));
+    assert.deepEqual([...png.subarray(0, 4)], [137, 80, 78, 71]);
+  }
   const checkpoints = await session.call("checkpoint.list", {}, "full");
   assert.ok(checkpoints.checkpoints.some((item) => item.checkpointId === high.checkpoint.checkpointId));
   const preconditions = await session.call("scene.preconditions", {}, "inspection");
