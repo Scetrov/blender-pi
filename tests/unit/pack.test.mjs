@@ -71,7 +71,8 @@ test("packed tarball follows the files allowlist and does not bundle peers", asy
     false,
   );
   const archive = join(destination, manifest[0].filename);
-  const extracted = spawnSync("tar", ["-xOf", archive, "package/package.json"], {
+  // Git for Windows tar otherwise treats the drive-letter colon as a remote host.
+  const extracted = spawnSync("tar", ["--force-local", "-xOf", archive, "package/package.json"], {
     encoding: "utf8",
   });
   assert.equal(extracted.status, 0, extracted.stderr);
@@ -81,7 +82,9 @@ test("packed tarball follows the files allowlist and does not bundle peers", asy
   assert.equal(packedManifest.peerDependencies["@earendil-works/pi-coding-agent"], "*");
   assert.equal(packedManifest.peerDependencies.typebox, "*");
   assert.equal(packedManifest.peerDependenciesMeta.typebox.optional, true);
-  const unpacked = spawnSync("tar", ["-xf", archive, "-C", destination], { encoding: "utf8" });
+  const unpacked = spawnSync("tar", ["--force-local", "-xf", archive, "-C", destination], {
+    encoding: "utf8",
+  });
   assert.equal(unpacked.status, 0, unpacked.stderr);
   // Exercise the actual pinned Pi skill loader on the packed payload, not just tar paths.
   const { loadSkills } = await import(
