@@ -2,18 +2,24 @@ import assert from "node:assert/strict";
 import { spawnSync } from "node:child_process";
 import { mkdtempSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
-import { join } from "node:path";
-import { pathToFileURL } from "node:url";
+import { dirname, join } from "node:path";
 import test from "node:test";
-import { fileURLToPath } from "node:url";
+import { fileURLToPath, pathToFileURL } from "node:url";
 
 const root = fileURLToPath(new URL("../..", import.meta.url));
 
 test("packed tarball follows the files allowlist and does not bundle peers", async () => {
   const destination = mkdtempSync(join(tmpdir(), "blender-pi-pack-"));
+  // Invoke npm's JS entry point directly: Windows spawnSync cannot execute npm.cmd.
+  const npmCli = join(
+    dirname(process.execPath),
+    process.platform === "win32"
+      ? "node_modules/npm/bin/npm-cli.js"
+      : "../lib/node_modules/npm/bin/npm-cli.js",
+  );
   const packed = spawnSync(
-    "npm",
-    ["pack", "--ignore-scripts", "--json", "--pack-destination", destination],
+    process.execPath,
+    [npmCli, "pack", "--ignore-scripts", "--json", "--pack-destination", destination],
     { cwd: root, encoding: "utf8" },
   );
   assert.equal(packed.status, 0, packed.stderr);

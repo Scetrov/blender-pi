@@ -77,7 +77,11 @@ test("Python and TypeScript agree on every shared fixture outcome", () => {
   const python = spawnSync(
     process.env.PYTHON ?? "python3",
     [fileURLToPath(new URL("../prototypes/protocol_probe.py", import.meta.url))],
-    { encoding: "utf8", timeout: 15_000 },
+    {
+      encoding: "utf8",
+      timeout: 15_000,
+      env: { ...process.env, PYTHONIOENCODING: "utf-8" },
+    },
   );
   assert.equal(python.status, 0, python.stderr);
   const actual = typescriptOutcomes();

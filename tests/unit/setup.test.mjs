@@ -165,7 +165,7 @@ test("approved setup installs the verified extension and reports its location", 
   );
   const text = output.lines.join("");
   assert.match(text, /Installed Blender Pi bridge 0\.0\.0/);
-  assert.match(text, new RegExp(installRoot));
+  assert.ok(text.includes(installRoot));
   assert.match(text, /Trust was not changed/);
   assert.equal(text.includes("pairing code"), false);
   const installed = join(installRoot, "blender_pi");
