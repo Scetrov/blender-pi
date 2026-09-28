@@ -33,21 +33,18 @@ jobs:
       - uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97
         with:
           python-version: '3.12'
-      - name: Fetch verified pnpm 12.6.0 without lifecycle scripts
+      - name: Fetch verified pnpm 12.6.0 native executable without lifecycle scripts
         shell: bash
+        env:
+          TEST_PLATFORM: ${{ matrix.platform }}
+          TEST_PYTHON: ${{ matrix.python }}
         run: |
-          mkdir -p "$RUNNER_TEMP/pnpm-cli"
-          curl --fail --location --retry 3 -o "$RUNNER_TEMP/pnpm-cli.tgz" \
-            https://registry.npmjs.org/pnpm/-/pnpm-12.6.0.tgz
-          node - "$RUNNER_TEMP/pnpm-cli.tgz" <<'JS'
-          const fs = require('fs');
-          const crypto = require('crypto');
-          const actual = crypto.createHash('sha512').update(fs.readFileSync(process.argv[2])).digest('base64');
-          const expected = 'PvaPlRyxEawgS0paFvCy3fDaVqluBBPoHYVdnwtV75JnFHCQKOHNAMQFwsX7e56OxNxGd3yAXQNzwvL/AP0g7A==';
-          if (actual !== expected) throw new Error('pnpm integrity mismatch');
-          JS
-          tar -xzf "$RUNNER_TEMP/pnpm-cli.tgz" -C "$RUNNER_TEMP/pnpm-cli"
-          node "$RUNNER_TEMP/pnpm-cli/package/bin/pnpm.cjs" install --frozen-lockfile --ignore-scripts
+          "$TEST_PYTHON" scripts/acquire_pnpm.py "$TEST_PLATFORM" "$RUNNER_TEMP/pnpm-cli"
+          if [[ "$RUNNER_OS" == Windows ]]; then
+            "$(cygpath -u "$RUNNER_TEMP")/pnpm-cli/pnpm.exe" install --frozen-lockfile --ignore-scripts
+          else
+            "$RUNNER_TEMP/pnpm-cli/pnpm" install --frozen-lockfile --ignore-scripts
+          fi
       - name: Static and unit validation
         shell: bash
         run: |

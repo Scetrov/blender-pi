@@ -4,10 +4,12 @@ import argparse
 import hashlib
 from pathlib import Path
 import tarfile
+from urllib.error import HTTPError
 from urllib.request import urlopen
 import zipfile
 
 BASE = "https://download.blender.org/release/Blender5.2/"
+MIRROR = "https://mirror.blender.org/release/Blender5.2/"
 ARCHIVES = {
     "linux-x64": ("blender-5.2.2-linux-x64.tar.xz", "84098912789dc450e95697c4184fb8a90acbe5111c2ba4aede3fecb57806a168"),
     "windows-x64": ("blender-5.2.2-windows-x64.zip", "3849d17a682cba006075aaa3f3597ecb5c9c30ec31035b2e092c53e40679b535"),
@@ -30,7 +32,15 @@ def acquire(platform, directory):
     if not archive.exists():
         temporary = directory / f"{name}.partial"
         try:
-            with urlopen(BASE + name, timeout=60) as response, temporary.open("wb") as output:
+            try:
+                response = urlopen(BASE + name, timeout=60)
+            except HTTPError as error:
+                if error.code != 403:
+                    raise
+                # Blender's mirror redirects to a serving mirror; the pinned SHA-256
+                # remains mandatory regardless of which host supplied the bytes.
+                response = urlopen(MIRROR + name, timeout=60)
+            with response, temporary.open("wb") as output:
                 for block in iter(lambda: response.read(1024 * 1024), b""):
                     output.write(block)
             verified(temporary, digest)
