@@ -68,6 +68,15 @@ def _save_index(directory, entries):
         temporary.unlink(missing_ok=True)
 
 
+def _identity_time(info, *, platform=os.name):
+    """Windows fstat ctime may differ from path stat for the same file.
+
+    On Windows creation time is stable across both APIs; on POSIX ctime also
+    detects metadata changes. The ownership index stores this identity value.
+    """
+    return getattr(info, "st_birthtime_ns", info.st_ctime_ns) if platform == "nt" else info.st_ctime_ns
+
+
 def _owned_file(directory, item):
     """An unchanged indexed inode only; never follow links or delete replacements."""
     path = directory / item["name"]
@@ -75,13 +84,13 @@ def _owned_file(directory, item):
         info = path.lstat()
         if (not stat.S_ISREG(info.st_mode) or info.st_size != item["size"] or
                 info.st_dev != item["dev"] or info.st_ino != item["ino"] or
-                info.st_ctime_ns != item["ctimeNs"]):
+                _identity_time(info) != item["ctimeNs"]):
             return None
         fd = os.open(path, os.O_RDONLY | getattr(os, "O_NOFOLLOW", 0))
         with os.fdopen(fd, "rb") as handle:
             opened = os.fstat(handle.fileno())
             if (not stat.S_ISREG(opened.st_mode) or opened.st_dev != info.st_dev or
-                    opened.st_ino != info.st_ino or opened.st_ctime_ns != info.st_ctime_ns):
+                    opened.st_ino != info.st_ino or _identity_time(opened) != _identity_time(info)):
                 return None
             return path if hashlib.sha256(handle.read(MAX_SESSION_BYTES + 1)).hexdigest() == item["sha256"] else None
     except OSError:
@@ -172,7 +181,7 @@ class ArtifactStore:
                 raise ArtifactError("Stored artifact does not match payload")
             digest = hashlib.sha256(payload).hexdigest()
             entries.append({"name": path.name, "size": len(payload), "sha256": digest,
-                            "dev": info.st_dev, "ino": info.st_ino, "ctimeNs": info.st_ctime_ns,
+                            "dev": info.st_dev, "ino": info.st_ino, "ctimeNs": _identity_time(info),
                             "created": int(time.time())})
             _save_index(self.directory, entries)
         except (OSError, ArtifactError) as exc:

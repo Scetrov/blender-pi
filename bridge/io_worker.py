@@ -26,6 +26,7 @@ CAPABILITIES = ("framingV1", "preconditionsV1", "idempotencyV1", "notificationsV
 MANDATORY_CAPABILITIES = frozenset({"framingV1"})
 MAX_CONNECTION_REQUESTS = 4096
 MAX_CONNECTION_SECONDS = 180  # session expires sooner; bounded, never a daemon socket
+CAPTURE_RESPONSE_SECONDS = 60  # software renders may exceed the ordinary 3-second dispatch wait
 
 
 def negotiate_hello(params, blender_version, bridge_version, bridge_id, challenge):
@@ -150,8 +151,8 @@ def _read_challenge(ipc, challenge, inbox=None, session=None, pending=None, acti
 
 
 def _await_pairing(ipc, challenge, inbox, correlation, stop_file, parent_pid, session, pending, active=None,
-                   deliver=None):
-    deadline = time.monotonic() + 3
+                   deliver=None, timeout_seconds=3):
+    deadline = time.monotonic() + timeout_seconds
     while time.monotonic() < deadline and not ipc.closed and not stop_file.exists() and os.getppid() == parent_pid:
         _read_challenge(ipc, challenge, inbox, session, pending, active)
         while inbox:
@@ -340,7 +341,7 @@ def _handle(connection, stop_file, parent_pid, blender_version, bridge_version, 
                                "method": method, "params": message["params"]})
                     ipc.flush()
                     answer = _await_pairing(ipc, challenge, inbox, correlation, stop_file, parent_pid, session, pending, active,
-                                            deliver=deliver)
+                                            deliver=deliver, timeout_seconds=(CAPTURE_RESPONSE_SECONDS if method == "scene.capture" else 3))
                     if "error" in answer:
                         code = answer["error"]
                         details = answer.get("details") if type(answer.get("details")) is dict else None

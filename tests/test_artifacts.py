@@ -12,10 +12,21 @@ package = types.ModuleType("bridge")
 package.__path__ = [str(Path(__file__).resolve().parents[1] / "dist/bridge")]
 sys.modules["bridge"] = package
 
-from bridge.artifacts import ArtifactError, ArtifactStore  # noqa: E402
+from bridge.artifacts import ArtifactError, ArtifactStore, _identity_time  # noqa: E402
 
 
 class ArtifactTests(unittest.TestCase):
+    def test_windows_path_and_handle_identity_ignores_inconsistent_ctime(self):
+        # CPython Windows path stat and fstat can disagree on ctime for one
+        # unchanged file; both report the same birthtime and inode.
+        path_info = types.SimpleNamespace(st_ctime_ns=100, st_birthtime_ns=100)
+        handle_info = types.SimpleNamespace(st_ctime_ns=200, st_birthtime_ns=100)
+        self.assertEqual(_identity_time(path_info, platform="nt"),
+                         _identity_time(handle_info, platform="nt"))
+        self.assertNotEqual(_identity_time(path_info, platform="posix"),
+                            _identity_time(handle_info, platform="posix"))
+        self.assertEqual(_identity_time(path_info, platform="nt"), 100)
+
     def test_sessions_and_descriptors(self):
         with tempfile.TemporaryDirectory() as directory:
             first = ArtifactStore(directory, 23)

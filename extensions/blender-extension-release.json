@@ -7,7 +7,7 @@
   "blenderVersionMin": "5.2.0",
   "algorithm": "sha256",
   "canonical": "path-tab-sha256-v1",
-  "digest": "7cf78b942b198bdbdbddd54be01ca5856c2b260b82c35f48fd437e1654b80810",
+  "digest": "b059cd88a2e599100dc0ce6bcaddec5b831b9a5849f0ed0eceaf47475c7b78cc",
   "files": [
     { "source": "bridge/__init__.py", "install": "__init__.py" },
     { "source": "bridge/runtime.py", "install": "runtime.py" },
