@@ -259,6 +259,45 @@ test("authenticated calls inject auth and do not escalate inspection trust", asy
   assert.deepEqual(result, { complete: true });
 });
 
+test("capture failures expose only bounded bridge-owned recovery details", async () => {
+  const { session, setNext } = harness();
+  await session.open();
+  setNext(approved);
+  await session.pollPairing("b".repeat(32));
+  setNext(() => ({
+    error: {
+      data: {
+        code: "BRIDGE_UNAVAILABLE",
+        details: { reason: "Render capture failed", action: "Check the camera", auth: "hidden" },
+      },
+    },
+  }));
+  await assert.rejects(
+    session.call("scene.capture", { mode: "workbench" }, "inspection"),
+    (error) => {
+      assert.equal(error.code, "BRIDGE_UNAVAILABLE");
+      assert.deepEqual(error.details, {
+        reason: "Render capture failed",
+        action: "Check the camera",
+      });
+      assert.equal(JSON.stringify(error).includes("hidden"), false);
+      return true;
+    },
+  );
+  setNext(() => ({
+    error: {
+      data: {
+        code: "BRIDGE_UNAVAILABLE",
+        details: { reason: "c".repeat(32), action: "Do not expose auth" },
+      },
+    },
+  }));
+  await assert.rejects(
+    session.call("scene.capture", { mode: "workbench" }, "inspection"),
+    (error) => error.code === "BRIDGE_UNAVAILABLE" && error.details === undefined,
+  );
+});
+
 test("shutdown and reload are idempotent and drop the credential", async () => {
   const { session, calls, setNext } = harness();
   await session.open();
