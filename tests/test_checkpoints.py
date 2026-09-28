@@ -1,9 +1,11 @@
 """Owner-scoped checkpoint metadata and cleanup; save callback simulates Blender."""
+from datetime import datetime, timezone
 import json
 from pathlib import Path
 import sys
 import tempfile
 import unittest
+from unittest.mock import patch
 
 STAGED = Path(__file__).resolve().parents[1] / "dist/bridge"
 sys.path.insert(0, str(STAGED))
@@ -90,6 +92,24 @@ class CheckpointStoreTests(unittest.TestCase):
         unrelated.write_bytes(b"BLENDER-user-file")
         self.assertEqual(self.store.cleanup(), [])
         self.assertTrue(unrelated.exists())
+
+    def test_retention_keeps_latest_when_wall_clock_ties(self):
+        class CoarseClock(datetime):
+            @classmethod
+            def now(cls, tz=None):
+                return datetime(2026, 9, 28, tzinfo=timezone.utc)
+
+        with patch("checkpoints.datetime", CoarseClock):
+            first = self.create("first")
+            self.store = CheckpointStore(self.store.root, keep_count=1)
+            second = self.create("second")
+            self.store = CheckpointStore(self.store.root, keep_count=1)
+            third = self.create("third")
+        self.store.mark_failed(first)
+        self.assertLess(first["createdAt"], second["createdAt"])
+        self.assertLess(second["createdAt"], third["createdAt"])
+        self.assertEqual(self.store.cleanup(), [second["checkpointPath"]])
+        self.assertTrue(Path(third["checkpointPath"]).exists())
 
     def test_unsaved_location_and_relative_asset_guard(self):
         metadata = self.create("unsaved", source="")
