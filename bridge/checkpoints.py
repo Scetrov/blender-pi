@@ -1,7 +1,7 @@
 # SPDX-License-Identifier: GPL-3.0-only
 """Owner-scoped Blender checkpoint files. Only high-risk, artist-approved callers use this."""
 
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 import hashlib
 import json
 import os
@@ -59,6 +59,27 @@ class CheckpointStore:
         self.keep_count = keep_count
         self.keep_days = keep_days
 
+    def _next_created_at(self):
+        """Order rapid checkpoints across store instances, even on coarse Windows clocks."""
+        now = datetime.now(timezone.utc)
+        latest = None
+        sidecars = list(self.root.glob("checkpoint-*.json"))
+        if len(sidecars) > MAX_METADATA_FILES:
+            raise CheckpointError("Too many checkpoint records for safe creation")
+        for sidecar in sidecars:
+            try:
+                if sidecar.is_symlink() or sidecar.stat().st_size > 4096:
+                    continue
+                metadata = json.loads(sidecar.read_text(encoding="utf-8"))
+                created = datetime.fromisoformat(metadata["createdAt"])
+                if created.tzinfo is None or created > now + timedelta(seconds=1):
+                    continue
+                if latest is None or created > latest:
+                    latest = created
+            except (OSError, ValueError, KeyError, TypeError):
+                continue
+        return max(now, latest + timedelta(microseconds=1)) if latest else now
+
     def create(self, *, operation_id, source_file, file_generation, session_generation,
                blender_version, save_copy, relative_dependencies=False):
         if not isinstance(operation_id, str) or not operation_id.isascii() or not operation_id.replace("-", "").replace("_", "").isalnum() or len(operation_id) > 64:
@@ -92,7 +113,7 @@ class CheckpointStore:
             metadata = {"version": 1, "operationId": operation_id, "sourcePath": str(source) if source else "",
                         "unsaved": source is None, "fileGeneration": file_generation,
                         "sessionGeneration": session_generation, "blenderVersion": blender_version,
-                        "createdAt": datetime.now(timezone.utc).isoformat(), "checkpointPath": str(checkpoint),
+                        "createdAt": self._next_created_at().isoformat(), "checkpointPath": str(checkpoint),
                         "byteSize": size, "sha256": digest, "protected": False}
             fd = os.open(sidecar, os.O_WRONLY | os.O_CREAT | os.O_EXCL | getattr(os, "O_NOFOLLOW", 0), 0o600)
             with os.fdopen(fd, "w", encoding="utf-8") as output:

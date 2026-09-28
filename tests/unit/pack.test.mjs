@@ -2,18 +2,24 @@ import assert from "node:assert/strict";
 import { spawnSync } from "node:child_process";
 import { mkdtempSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
-import { join } from "node:path";
-import { pathToFileURL } from "node:url";
+import { dirname, join } from "node:path";
 import test from "node:test";
-import { fileURLToPath } from "node:url";
+import { fileURLToPath, pathToFileURL } from "node:url";
 
 const root = fileURLToPath(new URL("../..", import.meta.url));
 
 test("packed tarball follows the files allowlist and does not bundle peers", async () => {
   const destination = mkdtempSync(join(tmpdir(), "blender-pi-pack-"));
+  // Invoke npm's JS entry point directly: Windows spawnSync cannot execute npm.cmd.
+  const npmCli = join(
+    dirname(process.execPath),
+    process.platform === "win32"
+      ? "node_modules/npm/bin/npm-cli.js"
+      : "../lib/node_modules/npm/bin/npm-cli.js",
+  );
   const packed = spawnSync(
-    "npm",
-    ["pack", "--ignore-scripts", "--json", "--pack-destination", destination],
+    process.execPath,
+    [npmCli, "pack", "--ignore-scripts", "--json", "--pack-destination", destination],
     { cwd: root, encoding: "utf8" },
   );
   assert.equal(packed.status, 0, packed.stderr);
@@ -65,7 +71,8 @@ test("packed tarball follows the files allowlist and does not bundle peers", asy
     false,
   );
   const archive = join(destination, manifest[0].filename);
-  const extracted = spawnSync("tar", ["-xOf", archive, "package/package.json"], {
+  // Git for Windows tar otherwise treats the drive-letter colon as a remote host.
+  const extracted = spawnSync("tar", ["--force-local", "-xOf", archive, "package/package.json"], {
     encoding: "utf8",
   });
   assert.equal(extracted.status, 0, extracted.stderr);
@@ -75,7 +82,11 @@ test("packed tarball follows the files allowlist and does not bundle peers", asy
   assert.equal(packedManifest.peerDependencies["@earendil-works/pi-coding-agent"], "*");
   assert.equal(packedManifest.peerDependencies.typebox, "*");
   assert.equal(packedManifest.peerDependenciesMeta.typebox.optional, true);
-  const unpacked = spawnSync("tar", ["-xf", archive, "-C", destination], { encoding: "utf8" });
+  const unpacked = spawnSync(
+    "tar",
+    ["--force-local", "-xf", archive, "-C", destination.replaceAll("\\", "/")],
+    { encoding: "utf8" },
+  );
   assert.equal(unpacked.status, 0, unpacked.stderr);
   // Exercise the actual pinned Pi skill loader on the packed payload, not just tar paths.
   const { loadSkills } = await import(

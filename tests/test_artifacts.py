@@ -72,7 +72,9 @@ class ArtifactTests(unittest.TestCase):
             (notes / "keep.txt").write_text("keep", encoding="utf-8")
             loose = ArtifactStore(root, 12)
             loose_file = loose.write(b"loose report", role="report", media_type="application/json", suffix=".json")
-            os.chmod(loose.directory, 0o755)
+            if os.name != "nt":
+                # POSIX group/other bits have no ACL-equivalent effect on Windows.
+                os.chmod(loose.directory, 0o755)
             damaged = ArtifactStore(root, 13)
             damaged_file = damaged.directory / ("report-" + "ab" * 16 + ".json")
             damaged_file.write_bytes(b"unindexed")
@@ -85,7 +87,10 @@ class ArtifactTests(unittest.TestCase):
             self.assertEqual(outside.read_bytes(), b"do not follow")
             self.assertEqual((planted_target / "secret.txt").read_text(encoding="utf-8"), "keep")
             self.assertEqual((notes / "keep.txt").read_text(encoding="utf-8"), "keep")
-            self.assertEqual(Path(loose_file["path"]).read_bytes(), b"loose report")
+            if os.name != "nt":
+                self.assertEqual(Path(loose_file["path"]).read_bytes(), b"loose report")
+            else:
+                self.assertFalse(Path(loose_file["path"]).exists())
             self.assertEqual(damaged_file.read_bytes(), b"unindexed")
 
     def test_session_byte_cap_rejects_without_deleting_existing_files(self):

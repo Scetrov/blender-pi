@@ -2,6 +2,7 @@
 
 import hashlib
 import importlib.util
+import os
 from pathlib import Path
 import sys
 
@@ -85,9 +86,12 @@ obj.keyframe_insert(data_path='location', frame=10)
     assert abs(quad.location.x - 2) < 0.01
     bpy.ops.object.camera_add(location=(0, -4, 2))
     bpy.context.scene.camera = bpy.context.object
-    workbench = addon.runtime.capture("workbench", 32, 24)
-    data = Path(workbench["path"]).read_bytes()
-    assert data.startswith(b"\x89PNG") and hashlib.sha256(data).hexdigest() == workbench["sha256"]
+    if os.name == "nt" and os.environ.get("BLENDER_PI_CI_SKIP_GPU_CAPTURE") == "1":
+        print("HOSTED_WINDOWS_WORKBENCH_CAPTURE_NOT_VALIDATED", flush=True)
+    else:
+        workbench = addon.runtime.capture("workbench", 32, 24)
+        data = Path(workbench["path"]).read_bytes()
+        assert data.startswith(b"\x89PNG") and hashlib.sha256(data).hexdigest() == workbench["sha256"]
     print("BLENDER_ARTIST_WORKFLOWS_OK", flush=True)
 finally:
     addon.unregister()

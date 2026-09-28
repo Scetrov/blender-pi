@@ -44,16 +44,40 @@ class ArchiveAcquisitionTests(unittest.TestCase):
         payload = b"untrusted mirror bytes"
         with tempfile.TemporaryDirectory() as directory, patch.dict(
             acquire_blender.ARCHIVES,
-            {"linux-x64": ("blender-5.2.2-linux-x64.tar.xz", "0" * 64)},
+            {"linux-x64": ("blender-5.2.2-linux-x64.tar.xz", "0" * 64, len(payload))},
         ), patch.object(acquire_blender, "urlopen", side_effect=[
             HTTPError(acquire_blender.BASE, 403, "Forbidden", {}, None),
+            BytesIO(payload),
             BytesIO(payload),
         ]) as opening:
             with self.assertRaisesRegex(ValueError, "digest mismatch"):
                 acquire_blender.acquire("linux-x64", Path(directory))
-            self.assertEqual(opening.call_args_list[1].args[0], acquire_blender.MIRROR + acquire_blender.ARCHIVES["linux-x64"][0])
+            name = acquire_blender.ARCHIVES["linux-x64"][0]
+            self.assertEqual(opening.call_args_list[1].args[0], acquire_blender.MIRROR + name)
+            self.assertEqual(opening.call_args_list[2].args[0], acquire_blender.SECONDARY_MIRROR + name)
             self.assertFalse(list(Path(directory).glob("*.partial")))
             self.assertFalse(list(Path(directory).glob("*.tar.xz")))
+
+    def test_blender_truncated_mirror_falls_back_to_verified_archive(self):
+        stream = BytesIO()
+        with tarfile.open(fileobj=stream, mode="w:xz") as tar:
+            content = b"test fixture"
+            member = tarfile.TarInfo("blender-5.2.2-linux-x64/README")
+            member.size = len(content)
+            tar.addfile(member, BytesIO(content))
+        payload = stream.getvalue()
+        with tempfile.TemporaryDirectory() as directory, patch.dict(
+            acquire_blender.ARCHIVES,
+            {"linux-x64": ("blender-5.2.2-linux-x64.tar.xz", hashlib.sha256(payload).hexdigest(), len(payload))},
+        ), patch.object(acquire_blender, "urlopen", side_effect=[
+            HTTPError(acquire_blender.BASE, 403, "Forbidden", {}, None),
+            BytesIO(payload[:100]),
+            BytesIO(payload),
+        ]):
+            acquire_blender.acquire("linux-x64", Path(directory))
+            installed = Path(directory) / "blender-5.2.2-linux-x64" / "blender-5.2.2-linux-x64" / "README"
+            self.assertEqual(installed.read_bytes(), b"test fixture")
+            self.assertFalse(list(Path(directory).glob("*.partial")))
 
 
 if __name__ == "__main__":

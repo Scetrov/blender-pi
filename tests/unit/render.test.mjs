@@ -55,6 +55,7 @@ test("default full-output file is owner-only and redacted", () => {
     maxBytes: 16,
   });
   assert.ok(limited.fullOutputPath);
-  assert.equal(statSync(limited.fullOutputPath).mode & 0o077, 0);
+  // Windows ACLs, not POSIX mode bits, govern file permissions.
+  if (process.platform !== "win32") assert.equal(statSync(limited.fullOutputPath).mode & 0o077, 0);
   assert.equal(readFileSync(limited.fullOutputPath, "utf8").includes("super-secret"), false);
 });

@@ -17,11 +17,13 @@ const MAX_DESCRIPTOR_BYTES = 1024;
 
 export class SessionError extends Error {
   readonly code: string;
+  readonly details?: { reason: string; action: string };
 
-  constructor(code: string, message: string) {
+  constructor(code: string, message: string, details?: { reason: string; action: string }) {
     super(message);
     this.name = "SessionError";
     this.code = code;
+    this.details = details;
   }
 }
 
@@ -36,7 +38,7 @@ export interface BridgeEndpoint {
 
 export interface RpcResponse {
   result?: unknown;
-  error?: { data?: { code?: string } };
+  error?: { data?: { code?: string; details?: Record<string, unknown> } };
 }
 
 export interface BridgeNotification {
@@ -438,9 +440,23 @@ export class BridgeSession {
       auth: { sessionId: credential.sessionId, credential: credential.credential },
     });
     if (response.error || response.result === undefined) {
+      // The bridge owns these bounded capture diagnostics; never include auth,
+      // arbitrary error fields, or the complete wire response in an exception.
+      const fields = response.error?.data?.details;
+      const details =
+        method === "scene.capture" &&
+        typeof fields?.reason === "string" &&
+        fields.reason.length <= 160 &&
+        !fields.reason.includes(credential.credential) &&
+        typeof fields.action === "string" &&
+        fields.action.length <= 160 &&
+        !fields.action.includes(credential.credential)
+          ? { reason: fields.reason, action: fields.action }
+          : undefined;
       throw new SessionError(
         response.error?.data?.code ?? "request_failed",
         "Blender bridge rejected the request",
+        details,
       );
     }
     return response.result;

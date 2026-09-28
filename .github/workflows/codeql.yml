@@ -24,7 +24,7 @@ jobs:
       matrix:
         language: [javascript-typescript, python]
     steps:
-      # actions/checkout v6.1.0, verified GitHub tag SHA
+      # actions/checkout v7.0.1, verified GitHub tag SHA
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
         with:
           persist-credentials: false

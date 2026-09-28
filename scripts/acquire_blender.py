@@ -10,11 +10,13 @@ import zipfile
 
 BASE = "https://download.blender.org/release/Blender5.2/"
 # Selected by Blender's official mirror.blender.org service for this release.
-# A fixed mirror avoids the service redirect when its CI-facing endpoint returns 403.
+# Fixed mirrors avoid service redirects that can return 403 in hosted CI.
+# Every downloaded archive must still match the exact pinned SHA-256.
 MIRROR = "https://ftp.nluug.nl/graphics/blender/release/Blender5.2/"
+SECONDARY_MIRROR = "https://mirror.clarkson.edu/blender/release/Blender5.2/"
 ARCHIVES = {
-    "linux-x64": ("blender-5.2.2-linux-x64.tar.xz", "84098912789dc450e95697c4184fb8a90acbe5111c2ba4aede3fecb57806a168"),
-    "windows-x64": ("blender-5.2.2-windows-x64.zip", "3849d17a682cba006075aaa3f3597ecb5c9c30ec31035b2e092c53e40679b535"),
+    "linux-x64": ("blender-5.2.2-linux-x64.tar.xz", "84098912789dc450e95697c4184fb8a90acbe5111c2ba4aede3fecb57806a168", 383295504),
+    "windows-x64": ("blender-5.2.2-windows-x64.zip", "3849d17a682cba006075aaa3f3597ecb5c9c30ec31035b2e092c53e40679b535", 404453484),
 }
 
 
@@ -23,32 +25,39 @@ def verified(path, digest):
     with path.open("rb") as file:
         for block in iter(lambda: file.read(1024 * 1024), b""):
             sha.update(block)
-    if sha.hexdigest() != digest:
-        raise ValueError(f"Blender archive digest mismatch: {path}")
+    actual = sha.hexdigest()
+    if actual != digest:
+        raise ValueError(
+            f"Blender archive digest mismatch: {path.name} "
+            f"({path.stat().st_size} bytes, sha256={actual}, expected={digest})"
+        )
 
 
 def acquire(platform, directory):
-    name, digest = ARCHIVES[platform]
+    name, digest, expected_size = ARCHIVES[platform]
     directory.mkdir(parents=True, exist_ok=True)
     archive = directory / name
     if not archive.exists():
         temporary = directory / f"{name}.partial"
-        try:
+        sources = (BASE, MIRROR, SECONDARY_MIRROR)
+        for index, source in enumerate(sources):
             try:
-                response = urlopen(BASE + name, timeout=60)
-            except HTTPError as error:
-                if error.code != 403:
+                with urlopen(source + name, timeout=60) as response, temporary.open("wb") as output:
+                    size = 0
+                    for block in iter(lambda: response.read(1024 * 1024), b""):
+                        size += len(block)
+                        if size > expected_size:
+                            raise ValueError("Blender archive exceeds pinned size")
+                        output.write(block)
+                if size != expected_size:
+                    raise ValueError(f"Blender archive size mismatch: {size}, expected={expected_size}")
+                verified(temporary, digest)
+                temporary.replace(archive)
+                break
+            except (OSError, ValueError):
+                temporary.unlink(missing_ok=True)
+                if index == len(sources) - 1:
                     raise
-                # Use the verified official mirror selected by Blender's mirror
-                # service; the pinned SHA-256 remains mandatory before extraction.
-                response = urlopen(MIRROR + name, timeout=60)
-            with response, temporary.open("wb") as output:
-                for block in iter(lambda: response.read(1024 * 1024), b""):
-                    output.write(block)
-            verified(temporary, digest)
-            temporary.replace(archive)
-        finally:
-            temporary.unlink(missing_ok=True)
     verified(archive, digest)
     target = directory / name.removesuffix(".tar.xz").removesuffix(".zip")
     if target.exists():

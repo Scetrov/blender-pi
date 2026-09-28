@@ -12,6 +12,7 @@ import {
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import test from "node:test";
+import { fileURLToPath } from "node:url";
 import { runBlenderCommand } from "../../extensions/commands.ts";
 import {
   canonicalDigest,
@@ -63,7 +64,7 @@ function commandIo(installRoot) {
 }
 
 function filePath(url) {
-  return decodeURIComponent(url.pathname);
+  return fileURLToPath(url);
 }
 
 test("committed release metadata matches the bundled extension digest", () => {
@@ -164,7 +165,7 @@ test("approved setup installs the verified extension and reports its location", 
   );
   const text = output.lines.join("");
   assert.match(text, /Installed Blender Pi bridge 0\.0\.0/);
-  assert.match(text, new RegExp(installRoot));
+  assert.ok(text.includes(installRoot));
   assert.match(text, /Trust was not changed/);
   assert.equal(text.includes("pairing code"), false);
   const installed = join(installRoot, "blender_pi");
