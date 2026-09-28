@@ -1,5 +1,5 @@
 // MIT. Model-facing output limits. Full copies are local and credential-redacted.
-import { mkdirSync, writeFileSync } from "node:fs";
+import { mkdtempSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { type TruncationResult, truncateHead } from "@earendil-works/pi-coding-agent";
@@ -29,9 +29,8 @@ export function limitModelOutput(
 }
 
 function writeRedactedOutput(text: string): string {
-  const directory = join(tmpdir(), "blender-pi-output");
-  mkdirSync(directory, { mode: 0o700 });
-  const path = join(directory, `output-${Date.now().toString(16)}-${process.pid}.txt`);
-  writeFileSync(path, text, { mode: 0o600 });
+  const directory = mkdtempSync(join(tmpdir(), "blender-pi-output-"));
+  const path = join(directory, "output.txt");
+  writeFileSync(path, text, { flag: "wx", mode: 0o600 });
   return path;
 }

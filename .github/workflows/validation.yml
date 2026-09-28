@@ -45,6 +45,14 @@ jobs:
           else
             "$RUNNER_TEMP/pnpm-cli/pnpm" install --frozen-lockfile --ignore-scripts
           fi
+      - name: Audit locked dependencies against registry advisories
+        shell: bash
+        run: |
+          if [[ "$RUNNER_OS" == Windows ]]; then
+            "$(cygpath -u "$RUNNER_TEMP")/pnpm-cli/pnpm.exe" audit --audit-level high
+          else
+            "$RUNNER_TEMP/pnpm-cli/pnpm" audit --audit-level high
+          fi
       - name: Static and unit validation
         shell: bash
         run: |

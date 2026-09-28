@@ -1,0 +1,16 @@
+# OpenSSF Best Practices evidence assessment — 2026-09-28
+
+**This is an assessment, not a badge claim.** No bestpractices.dev project ID or badge level was verified, and no request to that service or authenticated badge update was made. The root [`.bestpractices.json`](../.bestpractices.json) is an automation proposal, not the badge record. Its sole `floss_license_status: "?"` entry is unanswered; no criterion is asserted `Met`. A copy passed the installed OpenSSF Best Practices skill validator's `--check` against the pinned official BadgeApp criteria snapshot at upstream commit `424f55aff728c97d55a3df53b2d04deef3bcb0d9` (129 criterion fields). The source file was not formatted or changed during this check.
+
+## Evidence ledger
+
+| Topic | Evidence | Assessment / follow-up |
+| --- | --- | --- |
+| Licensing | Repository has root MIT [`LICENSE`](../LICENSE), GPL-3.0-only [`bridge/LICENSE`](../bridge/LICENSE), and scope notices in [licensing](licensing.md). | Public evidence is available to support a future license proposal; leave current `?` unchanged until a reviewed BadgeApp proposal is prepared. Verify notices in actual published artifacts. |
+| Tests and security checks | CI runs unit and real-Blender tests on Linux and Windows, plus CodeQL; [security validation](security-validation.md) records scan outcomes. | The 2026-09-28 cross-platform run failed two integration/unit checks. Do not claim that the release test gate currently passes. |
+| Scorecard | [OpenSSF Scorecard run 36478655520](https://github.com/Scetrov/blender-pi/actions/runs/36478655520) analyzed signed commit `f0b3d6c` using pinned CLI 5.5.0; score **8.6**. Code-Review **0** (0/6 approved changesets), License 9, and other reported checks 10. | Operator accepts 8.6 for now as **supporting evidence**, not as proof of badge criteria. Code-review history remains a real weakness; do not assert reviewed-change criteria. |
+| GitHub controls | Read-only GitHub API showed an active `mainline` ruleset (ID `24114048`) targeting the default branch with signatures, PR, and scanning rules; private vulnerability reporting, secret scanning and push protection were enabled. | The legacy branch-protection endpoint returned 404, which does **not** negate the active ruleset. Confirm enforcement on a real PR and maintainer bypass/review settings. |
+| Release protection | GitHub API returned 404 for `release` environment. | No protected publishing environment verified. Do not enable a publishing workflow merely by declaring the environment name. Obtain independent reviewer protection and permitted tag/ref policy first. |
+| Human/operational controls | No evidence checked for 2FA enforcement, historical vulnerability response times, independent maintainers, bus factor, external security review, or actual signed public releases. | Keep these unclaimed (`?` or absent). Request maintainer attestations and historical evidence; policy text alone does not establish performance. |
+
+Reassess against the final source and published artifacts. If maintainers choose to enroll in Best Practices, verify the canonical GitHub repository against the project ID before proposing answers; obtain consent before contacting bestpractices.dev. Do not turn this assessment into a badge score or infer a badge level from Scorecard.

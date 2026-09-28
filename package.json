@@ -51,7 +51,8 @@
     "python:check": "python3 -m compileall -q bridge scripts tests/prototypes && python3 scripts/validate_skills.py",
     "spell:check": "python3 scripts/check_spelling.py",
     "validate": "npm run format:check && npm run lint && npm run typecheck && npm run python:check && npm run spell:check && npm test",
-    "package:check": "npm pack --dry-run --json"
+    "package:check": "npm pack --ignore-scripts --offline --dry-run --json",
+    "release:build": "node --experimental-strip-types scripts/build_release.mjs"
   },
   "peerDependencies": {
     "@earendil-works/pi-ai": "*",

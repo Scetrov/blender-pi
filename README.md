@@ -1,35 +1,28 @@
 # blender-pi
 
-Artist-led automation for a **live Blender 5.2+ session** from [Pi](https://pi.dev). The artist chooses the work, pairs locally, reviews sensitive operations in Blender, and keeps the open `.blend` as the source of truth. Pi is intended to inspect the current scene, perform bounded changes with trusted Python, report results, and help the artist verify or recover. This is an **early implementation scaffold**, not a working or published Blender control package yet.
+Artist-led automation for a **live Blender 5.2+ session** from [Pi](https://pi.dev). The artist directs work, explicitly starts the local bridge, approves pairing in Blender, and keeps the open `.blend` authoritative. Pi can inspect, execute trusted Blender Python, report progress, capture evidence, and assist recovery. **Pre-release: not published or qualified for production.** Current cross-platform CI has [two failing checks](docs/security-validation.md); do not treat a passing local test as release approval.
 
-> **Security:** Full-trust access is equivalent to Blender **Run Script**. Generated Python is **not sandboxed** and can read/write files, access Blender's resources and add-ons, invoke processes, and use network libraries under your user account. Planned pairing, approvals, undo and checkpoints do not make arbitrary code safe or reverse external effects. Do not install or grant trust until you understand the risks; use a disposable project for testing.
+> **Security:** Full trust is Blender **Run Script-equivalent**, not a sandbox. Scripts and installed add-ons can read or change files, use the network, run processes and access resources available to Blender. Approval heuristics can miss indirect effects, and Blender undo/checkpoints do not reverse external effects. Pair only a client you recognize, review its proposed effects, and test on copies of valuable scenes.
 
-## Intended workflow and architecture
+## What it does
 
-1. The artist explicitly starts a disabled-by-default Blender extension, then reviews a short-lived pairing request in Blender. Even scene inspection requires approved pairing.
-2. Pi discovers a literal-loopback bridge, inspects the **current** Blender scene, and proposes a small change with a summary, expected effects, risk and preconditions.
-3. Blender validates trust and preconditions on its main thread, requires approval for declared/detected external effects and uncertain effects, and saves a checkpoint before high-risk or unknown work.
-4. Pi reports progress, structured results, visual evidence, actual undo/checkpoint availability and errors. The artist reviews the outcome and remains in control.
+- Blender's explicitly started GPL-3.0-only extension owns loopback discovery, physical-presence pairing, main-thread `bpy` dispatch, operation gating, undo/checkpoints, live inspection and artifacts. Socket I/O runs in a separate process without `bpy`.
+- The MIT Pi extension exposes tools, commands and workflow skills. Pairing is required even for scene inspection; full trust is required for arbitrary Python and recovery actions. Pi and Blender use a versioned, bounded, framed JSON-RPC protocol, not MCP or a cloud relay.
+- Changes use operation-scoped live-state preconditions and bounded receipts. High-risk scene work needs a verified checkpoint; declared/detected destructive external effects need explicit artist approval. Cancellation is cooperative and may be delayed by non-yielding work. Lost mutation outcomes require re-pairing and reconciliation, **not automatic retry**.
 
-The planned Pi-native TypeScript extension lives in `extensions/`; a thin Blender-side Python add-on belongs in `bridge/`; `protocol/` holds language-neutral wire contracts and `skills/` will hold domain guidance. A separate Python I/O process handles local sockets; all `bpy` access remains on Blender's main thread. No MCP server, cloud relay or shadow scene model is planned. **The Pi entry point remains inert. Blender's opt-in, process-isolated listener supports only a bounded public handshake and rejects pairing and privileged control; no authenticated connection, scene inspection or trusted execution is implemented.**
+## Development installation (not a published release)
 
-## Installation status and support
+See [installation and setup](docs/installation.md) for offline build, explicit install, pairing, uninstall and platform limitations. Use Node.js >=22.19, the operator-approved pnpm 12.6.0 and the committed lockfile; install development dependencies with `pnpm install --frozen-lockfile --ignore-scripts`. Do **not** use `npm install` or `npm ci` in this repository. Run `npm run validate`, then `npm run release:build` for locally built Blender ZIP and npm tarball in ignored `dist/release/`. These commands do not publish, enable the bridge, or grant trust. Blender 5.2.2 real tests use verified official archives and isolated user configurations; GUI-only behavior needs separate validation.
 
-**Do not use `pi install` expecting Blender control yet.** `@scetrov/blender-pi` is a planned npm/pi.dev package, not a published functional release. When ready, supported distribution channels will be **npm/pi.dev** for Pi plus a bundled Blender extension, and **GitHub Releases** for verified artifacts. The official Blender Extensions marketplace is out of scope. The initial target is Blender **5.2 or newer**, Linux x64 and Windows x64; real cross-platform integration tests are still pending. Other platforms are unsupported pending validation. See [compatibility](docs/compatibility.md) and [licensing](docs/licensing.md): Pi-side material is MIT; the Blender extension will be GPL-3.0-only.
+The target distribution is **npm/pi.dev and GitHub Releases** after release acceptance, on Linux x64 and Windows x64 with Blender 5.2+. macOS and ARM platforms are not supported for this first release. The official Blender Extensions marketplace and MCP compatibility are out of scope. Pi-side code, skills and docs are MIT; the Blender bridge is GPL-3.0-only with bundled source and notices. See [compatibility](docs/compatibility.md) and [licensing](docs/licensing.md).
 
-For development, clone the repository and run `npm ci --ignore-scripts`, then `npm run validate`. These commands validate the current scaffold only; they do not install Blender or connect Pi. Prototype Blender tests require a separately obtained verified 5.2 binary and an isolated test directory. Run `python3 scripts/stage_bridge.py` before testing the Blender add-on; this creates an ignored `dist/bridge/` copy containing both GPL bridge code and MIT wire sources. `/blender-setup` verifies the bundled extension against release metadata and copies it into Blender's 5.2 user extensions directory only after interactive approval. Print mode explains the change and does not install. Setup does not enable the extension, launch Blender, or change trust. Loading the Pi package still does not modify Blender.
+## Documentation
 
-## Design and project status
+- [Setup and diagnostics](docs/installation.md) · [Secure use](docs/secure-use.md) · [Architecture](docs/architecture.md)
+- [Protocol](docs/protocol.md) · [Pairing](docs/pairing.md) · [Risk policy](docs/risk-policy.md) · [Recovery](docs/recovery.md)
+- [Threat model](docs/threat-model.md) · [Privacy](docs/privacy.md) · [Compatibility](docs/compatibility.md)
+- [Release process](docs/release-process.md) · [Separate release checklist](docs/release-checklist.md) · [Security validation](docs/security-validation.md)
+- [Dependency review](docs/dependencies.md) · [Contributing](CONTRIBUTING.md) · [Security reporting](SECURITY.md) · [Support](SUPPORT.md)
+- [Governance](GOVERNANCE.md) · [Code of conduct](CODE_OF_CONDUCT.md) · [Changelog](CHANGELOG.md) · [OpenSpec progress](openspec/changes/establish-blender-pi-package/tasks.md)
 
-- [Architecture](docs/architecture.md) and [I/O feasibility](docs/io-architecture.md)
-- [Wire protocol decisions](docs/protocol.md)
-- [Pairing](docs/pairing.md) and [local threat model](docs/threat-model.md)
-- [Risk and approval policy](docs/risk-policy.md)
-- [Checkpoint prototype and recovery limits](docs/recovery.md)
-- [Support matrix](docs/compatibility.md)
-- [Dependency provenance](docs/dependencies.md) and [update review](docs/dependency-updates.md)
-- [Licensing and bundled materials](docs/licensing.md)
-- [Privacy](docs/privacy.md), [release process](docs/release-process.md), and [repository settings](docs/repository-settings.md)
-- [OpenSpec change and task progress](openspec/changes/establish-blender-pi-package/tasks.md)
-
-See [security reporting](SECURITY.md), [contributing](CONTRIBUTING.md), [governance](GOVERNANCE.md), [conduct](CODE_OF_CONDUCT.md), [support](SUPPORT.md), and [changelog](CHANGELOG.md). Release procedures and repository controls are still being established. Project code does not currently send telemetry to a project-operated service. Future network effects by trusted scripts or third-party add-ons are not covered by that statement.
+There is no project-operated telemetry service. Pi and any chosen model provider have separate data-handling terms; trusted scripts may make their own external connections. See [privacy](docs/privacy.md).

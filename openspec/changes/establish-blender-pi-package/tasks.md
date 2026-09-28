@@ -160,13 +160,13 @@
 
 ## 12. Prepare and Verify the Initial Release
 
-- [ ] 12.1 Implement reproducible Blender extension packaging and npm packaging with explicit file allowlists and no runtime dependency downloads.
+- [x] 12.1 Implement reproducible Blender extension packaging and npm packaging with explicit file allowlists and no runtime dependency downloads.
 - [ ] 12.2 Implement release automation using immutable actions, least-privilege permissions, protected environments, trusted npm publishing, and no long-lived publish secret where supported.
 - [ ] 12.3 Generate checksums, SPDX or CycloneDX SBOMs, build provenance, artifact attestations, and compatibility metadata for npm and Blender artifacts from the same signed version tag.
 - [ ] 12.4 Verify installation and uninstallation from produced release artifacts on every supported operating system, including rollback to the previous compatible package/bridge pair when one exists. For the first release, use a verified prior release candidate or document the absence of a prior pair and validate uninstall/recovery instead.
-- [ ] 12.5 Complete README, installation, secure-use, privacy, threat-model, architecture, protocol, pairing, recovery, compatibility, contribution, and release documentation from tested behavior.
-- [ ] 12.6 Perform a truthful OpenSSF Best Practices assessment, validate `.bestpractices.json`, run OpenSSF Scorecard as supporting evidence, and record repository-setting or human-attestation follow-ups without overstating status.
+- [x] 12.5 Complete README, installation, secure-use, privacy, threat-model, architecture, protocol, pairing, recovery, compatibility, contribution, and release documentation from tested behavior.
+- [x] 12.6 Perform a truthful OpenSSF Best Practices assessment, validate `.bestpractices.json`, run OpenSSF Scorecard as supporting evidence, and record repository-setting or human-attestation follow-ups without overstating status.
 - [ ] 12.7 Review the complete change against every OpenSpec scenario and record test or evidence coverage for each requirement.
 - [ ] 12.8 Run configured pre-commit checks explicitly, install the hook with `pre-commit install` if it is not active, and resolve all repository validation failures.
-- [ ] 12.9 Prepare a separate release checklist requiring signed release approval before publication and subsequent verification of npm installation, pi.dev gallery discovery, GitHub artifact integrity, provenance, SBOMs, checksums, and documented compatibility from public artifacts; publication and post-publication verification are not implementation-archive prerequisites.
+- [x] 12.9 Prepare a separate release checklist requiring signed release approval before publication and subsequent verification of npm installation, pi.dev gallery discovery, GitHub artifact integrity, provenance, SBOMs, checksums, and documented compatibility from public artifacts; publication and post-publication verification are not implementation-archive prerequisites.
 - [ ] 12.10 Archive the completed implementation change after pre-publication acceptance and before the final signed conventional commit and pull request, preserving Agent and Model attribution trailers within repository line-length limits. Do not claim the separate release checklist is completed merely because this change is archived.

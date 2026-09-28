@@ -1,5 +1,6 @@
 import assert from "node:assert/strict";
 import { readFileSync, statSync } from "node:fs";
+import { dirname } from "node:path";
 import test from "node:test";
 import { limitModelOutput, redactSecrets } from "../../extensions/output.ts";
 import { formatToolCall, formatToolResult } from "../../extensions/render.ts";
@@ -56,6 +57,14 @@ test("default full-output file is owner-only and redacted", () => {
   });
   assert.ok(limited.fullOutputPath);
   // Windows ACLs, not POSIX mode bits, govern file permissions.
-  if (process.platform !== "win32") assert.equal(statSync(limited.fullOutputPath).mode & 0o077, 0);
+  if (process.platform !== "win32") {
+    assert.equal(statSync(limited.fullOutputPath).mode & 0o077, 0);
+    assert.equal(statSync(dirname(limited.fullOutputPath)).mode & 0o077, 0);
+  }
   assert.equal(readFileSync(limited.fullOutputPath, "utf8").includes("super-secret"), false);
+  const second = limitModelOutput(`{"credential":"another-secret"}\n${"z".repeat(80)}`, {
+    maxBytes: 16,
+  });
+  assert.notEqual(dirname(second.fullOutputPath), dirname(limited.fullOutputPath));
+  assert.equal(readFileSync(second.fullOutputPath, "utf8").includes("another-secret"), false);
 });
