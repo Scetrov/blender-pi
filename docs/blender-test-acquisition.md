@@ -1,6 +1,6 @@
 # Blender 5.2.2 test fixture acquisition
 
-`scripts/acquire_blender.py {linux-x64|windows-x64} <empty-test-directory>` downloads the **official Blender 5.2.2** archive from `https://download.blender.org/release/Blender5.2/`, verifies SHA-256 before extracting, rejects unsafe archive paths, and refuses to overwrite an existing installation. It requires network only to fetch the archive; do not run it inside the default network-isolated test sandbox. CI may fetch to a disposable job directory, verify, then run Blender offline. The script does not install the extension, change system Blender preferences, or run downloaded code.
+`scripts/acquire_blender.py {linux-x64|windows-x64} <empty-test-directory>` downloads the **official Blender 5.2.2** archive from `https://download.blender.org/release/Blender5.2/` (falling back on HTTP 403 to `https://ftp.nluug.nl/graphics/blender/release/Blender5.2/`, a mirror selected by Blender's official mirror service), verifies the same pinned SHA-256 before extracting, rejects unsafe archive paths, and refuses to overwrite an existing installation. It requires network only to fetch the archive; do not run it inside the default network-isolated test sandbox. CI may fetch to a disposable job directory, verify, then run Blender offline. The script does not install the extension, change system Blender preferences, or run downloaded code.
 
 SHA-256 values (official [Blender 5.2.2 checksum list](https://download.blender.org/release/Blender5.2/blender-5.2.2.sha256), checked 2026-09-27):
 

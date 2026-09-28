@@ -1,0 +1,2 @@
+# Keep format checks identical on Windows and Unix; binary content is not normalized.
+* text=auto eol=lf
