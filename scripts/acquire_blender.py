@@ -23,8 +23,12 @@ def verified(path, digest):
     with path.open("rb") as file:
         for block in iter(lambda: file.read(1024 * 1024), b""):
             sha.update(block)
-    if sha.hexdigest() != digest:
-        raise ValueError(f"Blender archive digest mismatch: {path}")
+    actual = sha.hexdigest()
+    if actual != digest:
+        raise ValueError(
+            f"Blender archive digest mismatch: {path.name} "
+            f"({path.stat().st_size} bytes, sha256={actual}, expected={digest})"
+        )
 
 
 def acquire(platform, directory):

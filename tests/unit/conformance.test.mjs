@@ -2,6 +2,7 @@ import assert from "node:assert/strict";
 import { spawnSync } from "node:child_process";
 import { readFileSync } from "node:fs";
 import test from "node:test";
+import { fileURLToPath } from "node:url";
 import { FrameDecoder, FrameError } from "../../protocol/frame.ts";
 import { decodeJson, SchemaValidator, ValidationError } from "../../protocol/validate.ts";
 
@@ -75,7 +76,7 @@ function typescriptOutcomes() {
 test("Python and TypeScript agree on every shared fixture outcome", () => {
   const python = spawnSync(
     process.env.PYTHON ?? "python3",
-    [new URL("../prototypes/protocol_probe.py", import.meta.url).pathname],
+    [fileURLToPath(new URL("../prototypes/protocol_probe.py", import.meta.url))],
     { encoding: "utf8", timeout: 15_000 },
   );
   assert.equal(python.status, 0, python.stderr);

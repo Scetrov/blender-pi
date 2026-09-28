@@ -12,6 +12,7 @@ import {
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import test from "node:test";
+import { fileURLToPath } from "node:url";
 import { runBlenderCommand } from "../../extensions/commands.ts";
 import {
   canonicalDigest,
@@ -63,7 +64,7 @@ function commandIo(installRoot) {
 }
 
 function filePath(url) {
-  return decodeURIComponent(url.pathname);
+  return fileURLToPath(url);
 }
 
 test("committed release metadata matches the bundled extension digest", () => {

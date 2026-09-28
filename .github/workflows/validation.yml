@@ -55,6 +55,12 @@ jobs:
           ${{ matrix.python }} scripts/validate_skills.py
           node --experimental-strip-types --test tests/unit/*.test.mjs
           ${{ matrix.python }} -m unittest discover -s tests -p 'test_*.py'
+      - name: Install pinned Ubuntu EGL runtime for headless Blender
+        if: runner.os == 'Linux'
+        shell: bash
+        run: |
+          sudo apt-get update
+          sudo apt-get install --yes --no-install-recommends libegl1=1.7.0-1build1
       - name: Acquire verified Blender 5.2.2 and run headless smoke test
         shell: bash
         env:
