@@ -82,9 +82,11 @@ test("packed tarball follows the files allowlist and does not bundle peers", asy
   assert.equal(packedManifest.peerDependencies["@earendil-works/pi-coding-agent"], "*");
   assert.equal(packedManifest.peerDependencies.typebox, "*");
   assert.equal(packedManifest.peerDependenciesMeta.typebox.optional, true);
-  const unpacked = spawnSync("tar", ["--force-local", "-xf", archive, "-C", destination], {
-    encoding: "utf8",
-  });
+  const unpacked = spawnSync(
+    "tar",
+    ["--force-local", "-xf", archive, "-C", destination.replaceAll("\\", "/")],
+    { encoding: "utf8" },
+  );
   assert.equal(unpacked.status, 0, unpacked.stderr);
   // Exercise the actual pinned Pi skill loader on the packed payload, not just tar paths.
   const { loadSkills } = await import(
