@@ -1,0 +1,5 @@
+# Architecture (planned)
+
+Pi loads an MIT-licensed TypeScript extension and focused skills. Blender loads a thin GPL-3.0-only add-on after the artist explicitly enables it. The add-on owns authentication, main-thread `bpy` operations, per-operation approvals, undo/checkpoints, inspection and artifact creation; a separate bundled Python child process handles loopback transport without importing `bpy`. Pi and Blender negotiate a versioned framed JSON-RPC contract. The live `.blend` remains the only scene authority; Pi re-inspects and uses operation-scoped preconditions before mutations. See [I/O gate](io-architecture.md), [protocol](protocol.md), [pairing](pairing.md), and [risk policy](risk-policy.md).
+
+These are **design decisions**, not available runtime behavior. This repository currently contains an inert Pi extension entry point and Blender feasibility probes, not a working bridge. Implementation and Blender 5.2 integration tests are tracked by the [OpenSpec tasks](../openspec/changes/establish-blender-pi-package/tasks.md). Licensing boundaries are documented in [licensing](licensing.md).

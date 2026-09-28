@@ -1,0 +1,69 @@
+name: Cross-platform validation
+on:
+  push:
+  pull_request:
+permissions:
+  contents: read
+jobs:
+  unit-and-blender:
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: ubuntu-24.04
+            platform: linux-x64
+            python: python3
+            blender: blender
+          - os: windows-2022
+            platform: windows-x64
+            python: python
+            blender: blender.exe
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 45
+    steps:
+      # actions/checkout v6.1.0, verified GitHub tag SHA
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803
+        with:
+          persist-credentials: false
+      # actions/setup-node v7.0.0, verified GitHub tag SHA
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020
+        with:
+          node-version: '24.21.0'
+      # actions/setup-python v7.0.0, verified GitHub tag SHA
+      - uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97
+        with:
+          python-version: '3.12'
+      - name: Fetch verified pnpm 12.6.0 without lifecycle scripts
+        shell: bash
+        run: |
+          mkdir -p "$RUNNER_TEMP/pnpm-cli"
+          curl --fail --location --retry 3 -o "$RUNNER_TEMP/pnpm-cli.tgz" \
+            https://registry.npmjs.org/pnpm/-/pnpm-12.6.0.tgz
+          node - "$RUNNER_TEMP/pnpm-cli.tgz" <<'JS'
+          const fs = require('fs');
+          const crypto = require('crypto');
+          const actual = crypto.createHash('sha512').update(fs.readFileSync(process.argv[2])).digest('base64');
+          const expected = 'PvaPlRyxEawgS0paFvCy3fDaVqluBBPoHYVdnwtV75JnFHCQKOHNAMQFwsX7e56OxNxGd3yAXQNzwvL/AP0g7A==';
+          if (actual !== expected) throw new Error('pnpm integrity mismatch');
+          JS
+          tar -xzf "$RUNNER_TEMP/pnpm-cli.tgz" -C "$RUNNER_TEMP/pnpm-cli"
+          node "$RUNNER_TEMP/pnpm-cli/package/bin/pnpm.cjs" install --frozen-lockfile --ignore-scripts
+      - name: Static and unit validation
+        shell: bash
+        run: |
+          npm run format:check
+          npm run lint
+          npm run typecheck
+          ${{ matrix.python }} scripts/stage_bridge.py
+          ${{ matrix.python }} scripts/validate_skills.py
+          node --experimental-strip-types --test tests/unit/*.test.mjs
+          ${{ matrix.python }} -m unittest discover -s tests -p 'test_*.py'
+      - name: Acquire verified Blender 5.2.2 and run headless smoke test
+        shell: bash
+        env:
+          TEST_PLATFORM: ${{ matrix.platform }}
+          TEST_PYTHON: ${{ matrix.python }}
+          TEST_BLENDER: ${{ matrix.blender }}
+        run: |
+          "$TEST_PYTHON" scripts/acquire_blender.py "$TEST_PLATFORM" "$RUNNER_TEMP/blender-test"
+          "$TEST_PYTHON" scripts/run_blender_smoke.py "$RUNNER_TEMP/blender-test" "$TEST_PLATFORM" "$TEST_BLENDER"

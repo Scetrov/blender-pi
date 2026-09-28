@@ -1,0 +1,8 @@
+blank_issues_enabled: false
+contact_links:
+  - name: Private vulnerability report
+    url: https://github.com/scetrov/blender-pi/security/advisories/new
+    about: Enable and test GitHub Private Vulnerability Reporting before release. Never disclose secrets in public issues.
+  - name: Support and project status
+    url: https://github.com/scetrov/blender-pi/blob/main/SUPPORT.md
+    about: Check current support status before filing an issue.

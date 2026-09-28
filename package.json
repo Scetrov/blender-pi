@@ -1,6 +1,7 @@
 {
   "name": "@scetrov/blender-pi",
   "version": "0.0.0",
+  "type": "module",
   "description": "Artist-approved Pi integration for a live Blender 5.2+ session",
   "license": "MIT",
   "author": "scetrov",
@@ -33,26 +34,34 @@
     "extensions/",
     "skills/",
     "bridge/",
+    "!bridge/**/__pycache__/**",
+    "!bridge/**/*.pyc",
+    "protocol/frame.ts",
     "protocol/schemas/",
     "docs/licensing.md",
     "LICENSE",
     "README.md"
   ],
   "scripts": {
-    "format": "biome format --write package.json biome.json tsconfig.json extensions protocol tests/unit",
-    "format:check": "biome format package.json biome.json tsconfig.json extensions protocol tests/unit",
+    "format": "biome format --write package.json biome.json spelling.json tsconfig.json extensions protocol tests/unit",
+    "format:check": "biome format package.json biome.json spelling.json tsconfig.json extensions protocol tests/unit",
     "lint": "biome lint extensions protocol tests/unit",
     "typecheck": "tsc --noEmit",
-    "test": "node --test tests/unit/*.test.mjs && python3 -m unittest discover -s tests -p 'test_*.py'",
-    "python:check": "python3 -m compileall -q bridge tests/prototypes",
-    "validate": "npm run format:check && npm run lint && npm run typecheck && npm run python:check && npm test",
+    "test": "python3 scripts/stage_bridge.py && node --experimental-strip-types --test tests/unit/*.test.mjs && python3 -m unittest discover -s tests -p 'test_*.py'",
+    "python:check": "python3 -m compileall -q bridge scripts tests/prototypes && python3 scripts/validate_skills.py",
+    "spell:check": "python3 scripts/check_spelling.py",
+    "validate": "npm run format:check && npm run lint && npm run typecheck && npm run python:check && npm run spell:check && npm test",
     "package:check": "npm pack --dry-run --json"
   },
   "peerDependencies": {
+    "@earendil-works/pi-ai": "*",
     "@earendil-works/pi-coding-agent": "*",
     "typebox": "*"
   },
   "peerDependenciesMeta": {
+    "@earendil-works/pi-ai": {
+      "optional": true
+    },
     "@earendil-works/pi-coding-agent": {
       "optional": true
     },
@@ -62,6 +71,8 @@
   },
   "devDependencies": {
     "@biomejs/biome": "2.5.14",
+    "@earendil-works/pi-ai": "0.87.1",
+    "@earendil-works/pi-coding-agent": "0.87.1",
     "typescript": "7.0.2"
   }
 }

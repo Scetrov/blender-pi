@@ -9,8 +9,12 @@ test("Pi package exposes only explicit resources and optional host peers", () =>
   assert.deepEqual(manifest.pi.extensions, ["./extensions/index.ts"]);
   assert.deepEqual(manifest.pi.skills, ["./skills"]);
   assert.equal(manifest.license, "MIT");
+  assert.equal(manifest.peerDependencies["@earendil-works/pi-ai"], "*");
   assert.equal(manifest.peerDependencies["@earendil-works/pi-coding-agent"], "*");
   assert.equal(manifest.peerDependencies.typebox, "*");
+  assert.equal(manifest.devDependencies["@earendil-works/pi-ai"], "0.87.1");
+  assert.equal(manifest.devDependencies["@earendil-works/pi-coding-agent"], "0.87.1");
+  assert.equal(manifest.dependencies, undefined);
   for (const resource of manifest.pi.extensions) {
     assert.ok(statSync(new URL(`../../${resource}`, import.meta.url)).isFile());
   }

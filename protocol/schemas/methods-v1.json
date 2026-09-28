@@ -1,0 +1,158 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/scetrov/blender-pi/blob/main/protocol/schemas/methods-v1.json",
+  "title": "Version 1 method-bound request validation",
+  "description": "Validate JSON-RPC envelope with v1.json first; validate requests with this schema, and pending responses against the matching method's result definition.",
+  "oneOf": [
+    { "$ref": "#/$defs/hello" },
+    { "$ref": "#/$defs/pairRequest" },
+    { "$ref": "#/$defs/pairStatus" },
+    { "$ref": "#/$defs/pairRevoke" },
+    { "$ref": "#/$defs/bridgeStatus" },
+    { "$ref": "#/$defs/bridgeDiagnostics" },
+    { "$ref": "#/$defs/sceneInspect" },
+    { "$ref": "#/$defs/scenePreconditions" },
+    { "$ref": "#/$defs/sceneCapture" },
+    { "$ref": "#/$defs/operationExecute" },
+    { "$ref": "#/$defs/operationStatus" },
+    { "$ref": "#/$defs/operationJobStatus" },
+    { "$ref": "#/$defs/operationOutcome" },
+    { "$ref": "#/$defs/operationCancel" },
+    { "$ref": "#/$defs/checkpointList" },
+    { "$ref": "#/$defs/checkpointRestore" }
+  ],
+  "$defs": {
+    "hello": {
+      "properties": {
+        "method": { "const": "bridge.hello" },
+        "params": { "$ref": "v1.json#/$defs/helloRequest" }
+      }
+    },
+    "pairRequest": {
+      "properties": {
+        "method": { "const": "pair.request" },
+        "params": { "$ref": "v1.json#/$defs/pairRequest" }
+      }
+    },
+    "pairStatus": {
+      "properties": {
+        "method": { "const": "pair.status" },
+        "params": { "$ref": "v1.json#/$defs/pairStatusRequest" }
+      }
+    },
+    "pairRevoke": {
+      "properties": {
+        "method": { "const": "pair.revoke" },
+        "params": { "$ref": "v1.json#/$defs/authOnly" }
+      }
+    },
+    "bridgeStatus": {
+      "properties": {
+        "method": { "const": "bridge.status" },
+        "params": { "$ref": "v1.json#/$defs/authOnly" }
+      }
+    },
+    "bridgeDiagnostics": {
+      "properties": {
+        "method": { "const": "bridge.diagnostics" },
+        "params": { "$ref": "v1.json#/$defs/authOnly" }
+      }
+    },
+    "sceneInspect": {
+      "properties": {
+        "method": { "const": "scene.inspect" },
+        "params": { "$ref": "v1.json#/$defs/inspectionRequest" }
+      }
+    },
+    "scenePreconditions": {
+      "properties": {
+        "method": { "const": "scene.preconditions" },
+        "params": { "$ref": "v1.json#/$defs/authOnly" }
+      }
+    },
+    "sceneCapture": {
+      "properties": {
+        "method": { "const": "scene.capture" },
+        "params": { "$ref": "v1.json#/$defs/captureRequest" }
+      }
+    },
+    "operationExecute": {
+      "properties": {
+        "method": { "const": "operation.execute" },
+        "params": { "$ref": "v1.json#/$defs/execution" }
+      }
+    },
+    "operationStatus": {
+      "properties": {
+        "method": { "const": "operation.status" },
+        "params": { "$ref": "v1.json#/$defs/operationQuery" }
+      }
+    },
+    "operationJobStatus": {
+      "properties": {
+        "method": { "const": "operation.jobStatus" },
+        "params": { "$ref": "v1.json#/$defs/operationQuery" }
+      }
+    },
+    "operationOutcome": {
+      "properties": {
+        "method": { "const": "operation.outcome" },
+        "params": { "$ref": "v1.json#/$defs/outcomeLookup" }
+      }
+    },
+    "operationCancel": {
+      "properties": {
+        "method": { "const": "operation.cancel" },
+        "params": { "$ref": "v1.json#/$defs/operationQuery" }
+      }
+    },
+    "checkpointList": {
+      "properties": {
+        "method": { "const": "checkpoint.list" },
+        "params": { "$ref": "v1.json#/$defs/checkpointListRequest" }
+      }
+    },
+    "checkpointRestore": {
+      "properties": {
+        "method": { "const": "checkpoint.restore" },
+        "params": { "$ref": "v1.json#/$defs/restoreRequest" }
+      }
+    }
+  },
+  "x-results": {
+    "bridge.hello": "v1.json#/$defs/handshake",
+    "pair.request": "v1.json#/$defs/pairStatus",
+    "pair.status": "v1.json#/$defs/pairStatus",
+    "pair.revoke": "v1.json#/$defs/acknowledgement",
+    "bridge.status": "v1.json#/$defs/diagnostics",
+    "bridge.diagnostics": "v1.json#/$defs/diagnostics",
+    "scene.inspect": "v1.json#/$defs/inspection",
+    "scene.preconditions": "v1.json#/$defs/preconditions",
+    "scene.capture": "v1.json#/$defs/artifact",
+    "operation.execute": "v1.json#/$defs/acceptedOperation",
+    "operation.status": "v1.json#/$defs/operationStatus",
+    "operation.jobStatus": "v1.json#/$defs/job",
+    "operation.outcome": "v1.json#/$defs/outcome",
+    "operation.cancel": "v1.json#/$defs/operationStatus",
+    "checkpoint.list": "v1.json#/$defs/checkpointList",
+    "checkpoint.restore": "v1.json#/$defs/acceptedOperation"
+  },
+  "x-trust": {
+    "bridge.hello": "unpaired",
+    "pair.request": "unpaired",
+    "pair.status": "pending",
+    "pair.revoke": "inspection",
+    "bridge.status": "inspection",
+    "bridge.diagnostics": "inspection",
+    "scene.inspect": "inspection",
+    "scene.preconditions": "inspection",
+    "scene.capture": "inspection",
+    "operation.execute": "full",
+    "operation.status": "inspection",
+    "operation.jobStatus": "inspection",
+    "operation.outcome": "full",
+    "operation.cancel": "full",
+    "checkpoint.list": "full",
+    "checkpoint.restore": "full"
+  }
+}

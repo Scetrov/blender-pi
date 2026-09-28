@@ -1,0 +1,62 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/scetrov/blender-pi/blob/main/protocol/schemas/events-v1.json",
+  "title": "Version 1 method-bound notification validation",
+  "description": "Validate envelope with v1.json first; then validate this method-specific notification schema.",
+  "oneOf": [
+    {
+      "properties": {
+        "method": { "const": "event.operationState" },
+        "params": { "$ref": "v1.json#/$defs/operationEvent" }
+      }
+    },
+    {
+      "properties": {
+        "method": { "const": "event.progress" },
+        "params": { "$ref": "v1.json#/$defs/progress" }
+      }
+    },
+    {
+      "properties": {
+        "method": { "const": "event.log" },
+        "params": { "$ref": "v1.json#/$defs/log" }
+      }
+    },
+    {
+      "properties": {
+        "method": { "const": "event.warning" },
+        "params": { "$ref": "v1.json#/$defs/warning" }
+      }
+    },
+    {
+      "properties": {
+        "method": { "const": "event.artifact" },
+        "params": { "$ref": "v1.json#/$defs/artifact" }
+      }
+    },
+    {
+      "properties": {
+        "method": { "const": "event.cancellation" },
+        "params": { "$ref": "v1.json#/$defs/cancellationEvent" }
+      }
+    },
+    {
+      "properties": {
+        "method": { "const": "event.completed" },
+        "params": { "$ref": "v1.json#/$defs/receipt" }
+      }
+    },
+    {
+      "properties": {
+        "method": { "const": "event.failed" },
+        "params": { "$ref": "v1.json#/$defs/receipt" }
+      }
+    },
+    {
+      "properties": {
+        "method": { "const": "event.trust" },
+        "params": { "$ref": "v1.json#/$defs/trustEvent" }
+      }
+    }
+  ]
+}

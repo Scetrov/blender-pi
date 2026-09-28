@@ -1,0 +1,723 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/scetrov/blender-pi/blob/main/protocol/schemas/v1.json",
+  "title": "Blender Pi wire protocol v1",
+  "description": "Definitions are validated before dispatch; a JSON-RPC envelope must match exactly one request, response or notification form.",
+  "$defs": {
+    "identifier": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 128,
+      "pattern": "^[a-zA-Z0-9_-]+$"
+    },
+    "text": { "type": "string", "minLength": 1, "maxLength": 1024 },
+    "version": {
+      "type": "string",
+      "pattern": "^[0-9]+\\.[0-9]+(?:\\.[0-9]+)?(?:[-+][a-zA-Z0-9.-]+)?$",
+      "maxLength": 64
+    },
+    "rpcId": {
+      "oneOf": [
+        { "type": "string", "minLength": 1, "maxLength": 128 },
+        { "type": "integer", "minimum": 0, "maximum": 2147483647 }
+      ]
+    },
+    "generation": { "type": "integer", "minimum": 0, "maximum": 9007199254740991 },
+    "timestamp": { "type": "string", "format": "date-time", "maxLength": 40 },
+    "credential": { "type": "string", "minLength": 32, "maxLength": 256 },
+    "trust": { "enum": ["unpaired", "pending", "inspection", "full"] },
+    "risk": { "enum": ["low", "moderate", "high", "external_effect", "unknown"] },
+    "operationState": {
+      "enum": [
+        "queued",
+        "active",
+        "cancellation_requested",
+        "completed",
+        "failed",
+        "cancelled",
+        "outcome_unknown"
+      ]
+    },
+    "cancellationState": {
+      "enum": ["requested_by_caller", "received_by_bridge", "observed_by_execution"]
+    },
+    "artifactRole": { "enum": ["image", "report", "checkpoint", "export", "log"] },
+    "errorCode": {
+      "enum": [
+        "INVALID_FRAME",
+        "INVALID_JSON",
+        "INVALID_REQUEST",
+        "INVALID_PARAMS",
+        "METHOD_NOT_FOUND",
+        "UNSUPPORTED_VERSION",
+        "MISSING_CAPABILITY",
+        "PAIRING_REQUIRED",
+        "PAIRING_DENIED",
+        "PAIRING_EXPIRED",
+        "RATE_LIMITED",
+        "UNAUTHORIZED",
+        "STALE_PRECONDITION",
+        "IDEMPOTENCY_CONFLICT",
+        "OUTCOME_UNKNOWN",
+        "QUEUE_FULL",
+        "APPROVAL_DENIED",
+        "CHECKPOINT_FAILED",
+        "CANCELLED",
+        "SERIALIZATION_FAILED",
+        "EXECUTION_FAILED",
+        "ARTIFACT_INVALID",
+        "BRIDGE_UNAVAILABLE",
+        "INTERNAL_ERROR"
+      ]
+    },
+    "rpcError": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["code", "message", "data"],
+      "properties": {
+        "code": { "type": "integer", "minimum": -32768, "maximum": 32767 },
+        "message": { "$ref": "#/$defs/text" },
+        "data": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["code", "correlationId"],
+          "properties": {
+            "code": { "$ref": "#/$defs/errorCode" },
+            "correlationId": { "$ref": "#/$defs/identifier" },
+            "details": {
+              "type": "object",
+              "maxProperties": 16,
+              "additionalProperties": {
+                "oneOf": [
+                  { "type": "string", "maxLength": 1024 },
+                  { "type": "number" },
+                  { "type": "boolean" },
+                  { "type": "null" }
+                ]
+              }
+            }
+          }
+        }
+      }
+    },
+    "request": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["jsonrpc", "id", "method", "params"],
+      "properties": {
+        "jsonrpc": { "const": "2.0" },
+        "id": { "$ref": "#/$defs/rpcId" },
+        "method": {
+          "type": "string",
+          "pattern": "^(bridge|pair|scene|operation|checkpoint)\\.[a-z][a-zA-Z]*$",
+          "maxLength": 64
+        },
+        "params": { "type": "object", "maxProperties": 32 }
+      }
+    },
+    "response": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["jsonrpc", "id"],
+      "properties": {
+        "jsonrpc": { "const": "2.0" },
+        "id": { "oneOf": [{ "$ref": "#/$defs/rpcId" }, { "type": "null" }] },
+        "result": { "type": "object", "maxProperties": 32 },
+        "error": { "$ref": "#/$defs/rpcError" }
+      },
+      "oneOf": [{ "required": ["result"] }, { "required": ["error"] }]
+    },
+    "notification": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["jsonrpc", "method", "params"],
+      "properties": {
+        "jsonrpc": { "const": "2.0" },
+        "method": { "type": "string", "pattern": "^event\\.[a-z][a-zA-Z]*$", "maxLength": 64 },
+        "params": { "type": "object", "maxProperties": 32 }
+      }
+    },
+    "envelope": {
+      "oneOf": [
+        { "$ref": "#/$defs/request" },
+        { "$ref": "#/$defs/response" },
+        { "$ref": "#/$defs/notification" }
+      ]
+    },
+    "auth": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["sessionId", "credential"],
+      "properties": {
+        "sessionId": { "$ref": "#/$defs/identifier" },
+        "credential": { "$ref": "#/$defs/credential" }
+      }
+    },
+    "handshake": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "protocolVersion",
+        "packageVersion",
+        "bridgeVersion",
+        "blenderVersion",
+        "bridgeId",
+        "maxFrameBytes",
+        "capabilities"
+      ],
+      "properties": {
+        "protocolVersion": { "$ref": "#/$defs/version" },
+        "packageVersion": { "$ref": "#/$defs/version" },
+        "bridgeVersion": { "$ref": "#/$defs/version" },
+        "blenderVersion": { "$ref": "#/$defs/version" },
+        "bridgeId": { "$ref": "#/$defs/identifier" },
+        "pairingId": { "$ref": "#/$defs/identifier" },
+        "pairingExpiresAt": { "$ref": "#/$defs/timestamp" },
+        "maxFrameBytes": { "type": "integer", "minimum": 1024, "maximum": 1048576 },
+        "capabilities": {
+          "type": "array",
+          "maxItems": 32,
+          "uniqueItems": true,
+          "items": { "$ref": "#/$defs/identifier" }
+        }
+      }
+    },
+    "pairRequest": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "pairingId",
+        "code",
+        "clientName",
+        "packageVersion",
+        "workingDirectory",
+        "requestedTrust",
+        "expiresAt"
+      ],
+      "properties": {
+        "pairingId": { "$ref": "#/$defs/identifier" },
+        "code": { "type": "string", "minLength": 6, "maxLength": 32 },
+        "clientName": { "$ref": "#/$defs/text" },
+        "packageVersion": { "$ref": "#/$defs/version" },
+        "workingDirectory": { "$ref": "#/$defs/text" },
+        "requestedTrust": { "enum": ["inspection", "full"] },
+        "expiresAt": { "$ref": "#/$defs/timestamp" }
+      }
+    },
+    "pairStatus": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["pairingId", "trust", "expiresAt"],
+      "properties": {
+        "pairingId": { "$ref": "#/$defs/identifier" },
+        "trust": { "$ref": "#/$defs/trust" },
+        "expiresAt": { "$ref": "#/$defs/timestamp" },
+        "sessionId": { "$ref": "#/$defs/identifier" },
+        "credential": { "$ref": "#/$defs/credential" }
+      }
+    },
+    "preconditions": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["fileGeneration", "sessionGeneration"],
+      "properties": {
+        "fileGeneration": { "$ref": "#/$defs/generation" },
+        "sessionGeneration": { "$ref": "#/$defs/generation" },
+        "targetId": { "$ref": "#/$defs/identifier" },
+        "mode": { "type": "string", "minLength": 1, "maxLength": 64 },
+        "selectedIds": {
+          "type": "array",
+          "maxItems": 128,
+          "uniqueItems": true,
+          "items": { "$ref": "#/$defs/identifier" }
+        }
+      }
+    },
+    "executionPreconditions": {
+      "$ref": "#/$defs/preconditions",
+      "required": ["fileGeneration", "sessionGeneration", "mode", "selectedIds"]
+    },
+    "inspection": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "fileGeneration",
+        "sessionGeneration",
+        "blenderVersion",
+        "sceneName",
+        "mode",
+        "selectedIds",
+        "objects",
+        "collections",
+        "materials",
+        "cameras",
+        "render",
+        "summary",
+        "report",
+        "nextCursor"
+      ],
+      "properties": {
+        "fileGeneration": { "$ref": "#/$defs/generation" },
+        "sessionGeneration": { "$ref": "#/$defs/generation" },
+        "blenderVersion": { "$ref": "#/$defs/version" },
+        "filePath": { "type": "string", "maxLength": 4096 },
+        "isDirty": { "type": "boolean" },
+        "sceneName": { "$ref": "#/$defs/text" },
+        "mode": { "type": "string", "maxLength": 64 },
+        "selectedIds": {
+          "type": "array",
+          "maxItems": 128,
+          "items": { "$ref": "#/$defs/identifier" }
+        },
+        "objects": {
+          "type": "array",
+          "maxItems": 128,
+          "items": { "type": "object", "maxProperties": 12 }
+        },
+        "collections": {
+          "type": "array",
+          "maxItems": 128,
+          "items": { "type": "object", "maxProperties": 12 }
+        },
+        "materials": {
+          "type": "array",
+          "maxItems": 128,
+          "items": { "type": "object", "maxProperties": 12 }
+        },
+        "cameras": {
+          "type": "array",
+          "maxItems": 128,
+          "items": { "type": "object", "maxProperties": 12 }
+        },
+        "render": { "type": "object", "maxProperties": 16 },
+        "summary": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "objectCount",
+            "collectionCount",
+            "materialCount",
+            "cameraCount",
+            "complete",
+            "selectionTruncated"
+          ],
+          "properties": {
+            "objectCount": { "type": "integer", "minimum": 0, "maximum": 1000000 },
+            "collectionCount": { "type": "integer", "minimum": 0, "maximum": 1000000 },
+            "materialCount": { "type": "integer", "minimum": 0, "maximum": 1000000 },
+            "cameraCount": { "type": "integer", "minimum": 0, "maximum": 1000000 },
+            "complete": { "type": "boolean" },
+            "selectionTruncated": { "type": "boolean" }
+          }
+        },
+        "report": {
+          "oneOf": [{ "$ref": "#/$defs/artifact" }, { "type": "null" }]
+        },
+        "nextCursor": { "type": ["string", "null"], "maxLength": 128 }
+      }
+    },
+    "effect": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["category", "description"],
+      "properties": {
+        "category": {
+          "enum": [
+            "scene",
+            "file_overwrite",
+            "process_launch",
+            "network_disclosure",
+            "installation_change",
+            "other_external",
+            "unknown"
+          ]
+        },
+        "description": { "$ref": "#/$defs/text" },
+        "target": { "type": "string", "maxLength": 4096 }
+      }
+    },
+    "execution": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "auth",
+        "summary",
+        "declaredRisk",
+        "expectedEffects",
+        "undoPreference",
+        "checkpointPolicy",
+        "code",
+        "idempotencyKey",
+        "preconditions"
+      ],
+      "properties": {
+        "auth": { "$ref": "#/$defs/auth" },
+        "summary": { "$ref": "#/$defs/text" },
+        "declaredRisk": { "$ref": "#/$defs/risk" },
+        "expectedEffects": {
+          "type": "array",
+          "minItems": 1,
+          "maxItems": 32,
+          "items": { "$ref": "#/$defs/effect" }
+        },
+        "undoPreference": { "enum": ["required", "preferred", "unavailable"] },
+        "checkpointPolicy": { "enum": ["automatic", "required"] },
+        "code": { "type": "string", "minLength": 1, "maxLength": 262144 },
+        "idempotencyKey": { "$ref": "#/$defs/identifier" },
+        "preconditions": { "$ref": "#/$defs/executionPreconditions" }
+      }
+    },
+    "progress": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["operationId", "sequence", "phase", "completed", "message"],
+      "properties": {
+        "operationId": { "$ref": "#/$defs/identifier" },
+        "sequence": { "$ref": "#/$defs/generation" },
+        "phase": { "$ref": "#/$defs/text" },
+        "completed": { "type": "number", "minimum": 0 },
+        "total": { "type": "number", "exclusiveMinimum": 0 },
+        "message": { "$ref": "#/$defs/text" }
+      }
+    },
+    "log": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["operationId", "sequence", "level", "message", "truncated"],
+      "properties": {
+        "operationId": { "$ref": "#/$defs/identifier" },
+        "sequence": { "$ref": "#/$defs/generation" },
+        "level": { "enum": ["debug", "info", "warning", "error"] },
+        "message": { "$ref": "#/$defs/text" },
+        "truncated": { "type": "boolean" }
+      }
+    },
+    "warning": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["operationId", "sequence", "code", "message"],
+      "properties": {
+        "operationId": { "$ref": "#/$defs/identifier" },
+        "sequence": { "$ref": "#/$defs/generation" },
+        "code": { "$ref": "#/$defs/identifier" },
+        "message": { "$ref": "#/$defs/text" }
+      }
+    },
+    "artifact": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["artifactId", "operationId", "role", "mediaType", "path", "byteSize", "sha256"],
+      "properties": {
+        "artifactId": { "$ref": "#/$defs/identifier" },
+        "operationId": { "$ref": "#/$defs/identifier" },
+        "role": { "$ref": "#/$defs/artifactRole" },
+        "mediaType": { "type": "string", "minLength": 3, "maxLength": 128 },
+        "path": { "type": "string", "minLength": 1, "maxLength": 4096 },
+        "byteSize": { "type": "integer", "minimum": 0, "maximum": 8589934592 },
+        "sha256": { "type": "string", "pattern": "^[0-9a-f]{64}$" },
+        "capture": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["scene", "mode", "frame", "engine", "width", "height", "timestamp"],
+          "properties": {
+            "scene": { "$ref": "#/$defs/text" },
+            "view": { "type": ["string", "null"], "maxLength": 64 },
+            "camera": { "type": ["string", "null"], "maxLength": 1024 },
+            "mode": { "enum": ["viewport", "workbench", "rendered"] },
+            "frame": { "type": "integer", "minimum": -1048576, "maximum": 1048576 },
+            "engine": { "type": "string", "minLength": 1, "maxLength": 64 },
+            "width": { "type": "integer", "minimum": 1, "maximum": 4096 },
+            "height": { "type": "integer", "minimum": 1, "maximum": 4096 },
+            "timestamp": { "$ref": "#/$defs/timestamp" }
+          }
+        }
+      }
+    },
+    "cancellation": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["auth", "operationId", "state"],
+      "properties": {
+        "auth": { "$ref": "#/$defs/auth" },
+        "operationId": { "$ref": "#/$defs/identifier" },
+        "state": { "$ref": "#/$defs/cancellationState" }
+      }
+    },
+    "cancellationEvent": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["operationId", "sequence", "state"],
+      "properties": {
+        "operationId": { "$ref": "#/$defs/identifier" },
+        "sequence": { "$ref": "#/$defs/generation" },
+        "state": { "$ref": "#/$defs/cancellationState" }
+      }
+    },
+    "operationEvent": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["operationId", "sequence", "state"],
+      "properties": {
+        "operationId": { "$ref": "#/$defs/identifier" },
+        "sequence": { "$ref": "#/$defs/generation" },
+        "state": { "$ref": "#/$defs/operationState" },
+        "job": { "$ref": "#/$defs/job" }
+      }
+    },
+    "job": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["jobId", "operationId", "state"],
+      "properties": {
+        "jobId": { "$ref": "#/$defs/identifier" },
+        "operationId": { "$ref": "#/$defs/identifier" },
+        "state": { "enum": ["registered", "running", "completed", "failed", "cancelled"] }
+      }
+    },
+    "checkpoint": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "checkpointId",
+        "operationId",
+        "sourceFile",
+        "fileGeneration",
+        "artifact",
+        "createdAt"
+      ],
+      "properties": {
+        "checkpointId": { "$ref": "#/$defs/identifier" },
+        "operationId": { "$ref": "#/$defs/identifier" },
+        "sourceFile": { "type": ["string", "null"], "maxLength": 4096 },
+        "fileGeneration": { "$ref": "#/$defs/generation" },
+        "artifact": { "$ref": "#/$defs/artifact" },
+        "createdAt": { "$ref": "#/$defs/timestamp" }
+      }
+    },
+    "receipt": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "operationId",
+        "correlationId",
+        "summary",
+        "declaredRisk",
+        "effectiveRisk",
+        "expectedEffects",
+        "trust",
+        "state",
+        "startedAt",
+        "finishedAt",
+        "durationMs",
+        "undoAvailable",
+        "warnings",
+        "artifacts",
+        "truncated"
+      ],
+      "properties": {
+        "operationId": { "$ref": "#/$defs/identifier" },
+        "correlationId": { "$ref": "#/$defs/identifier" },
+        "summary": { "$ref": "#/$defs/text" },
+        "declaredRisk": { "$ref": "#/$defs/risk" },
+        "effectiveRisk": { "$ref": "#/$defs/risk" },
+        "expectedEffects": {
+          "type": "array",
+          "maxItems": 32,
+          "items": { "$ref": "#/$defs/effect" }
+        },
+        "trust": { "const": "full" },
+        "state": { "$ref": "#/$defs/operationState" },
+        "startedAt": { "$ref": "#/$defs/timestamp" },
+        "finishedAt": { "$ref": "#/$defs/timestamp" },
+        "durationMs": { "type": "integer", "minimum": 0 },
+        "undoAvailable": { "type": "boolean" },
+        "checkpoint": { "$ref": "#/$defs/checkpoint" },
+        "warnings": { "type": "array", "maxItems": 64, "items": { "$ref": "#/$defs/warning" } },
+        "artifacts": { "type": "array", "maxItems": 64, "items": { "$ref": "#/$defs/artifact" } },
+        "truncated": { "type": "boolean" },
+        "error": { "$ref": "#/$defs/rpcError" },
+        "job": { "$ref": "#/$defs/job" },
+        "result": {}
+      }
+    },
+    "diagnostics": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "bridgeId",
+        "protocolVersion",
+        "maxFrameBytes",
+        "capabilities",
+        "listener",
+        "ioProcess",
+        "queueDepth",
+        "dispatcher",
+        "trust",
+        "recentErrors"
+      ],
+      "properties": {
+        "bridgeId": { "$ref": "#/$defs/identifier" },
+        "protocolVersion": { "$ref": "#/$defs/version" },
+        "maxFrameBytes": { "type": "integer", "minimum": 1024, "maximum": 1048576 },
+        "capabilities": {
+          "type": "array",
+          "maxItems": 32,
+          "uniqueItems": true,
+          "items": { "$ref": "#/$defs/identifier" }
+        },
+        "listener": { "enum": ["stopped", "starting", "listening", "failed"] },
+        "ioProcess": { "enum": ["stopped", "starting", "running", "failed"] },
+        "queueDepth": { "type": "integer", "minimum": 0, "maximum": 128 },
+        "dispatcher": { "enum": ["idle", "busy", "blocked", "failed"] },
+        "trust": { "$ref": "#/$defs/trust" },
+        "recentErrors": { "type": "array", "maxItems": 16, "items": { "$ref": "#/$defs/rpcError" } }
+      }
+    },
+    "outcomeLookup": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["auth", "idempotencyKey"],
+      "properties": {
+        "auth": { "$ref": "#/$defs/auth" },
+        "idempotencyKey": { "$ref": "#/$defs/identifier" },
+        "operationId": { "$ref": "#/$defs/identifier" }
+      }
+    },
+    "helloRequest": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["protocolVersion", "packageVersion", "maxFrameBytes", "capabilities"],
+      "properties": {
+        "protocolVersion": { "$ref": "#/$defs/version" },
+        "packageVersion": { "$ref": "#/$defs/version" },
+        "maxFrameBytes": { "type": "integer", "minimum": 1024, "maximum": 1048576 },
+        "capabilities": {
+          "type": "array",
+          "maxItems": 32,
+          "uniqueItems": true,
+          "items": { "$ref": "#/$defs/identifier" }
+        }
+      }
+    },
+    "pairStatusRequest": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["pairingId"],
+      "properties": { "pairingId": { "$ref": "#/$defs/identifier" } }
+    },
+    "authOnly": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["auth"],
+      "properties": { "auth": { "$ref": "#/$defs/auth" } }
+    },
+    "checkpointListRequest": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["auth"],
+      "properties": {
+        "auth": { "$ref": "#/$defs/auth" },
+        "cursor": { "$ref": "#/$defs/identifier" }
+      }
+    },
+    "operationQuery": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["auth", "operationId"],
+      "properties": {
+        "auth": { "$ref": "#/$defs/auth" },
+        "operationId": { "$ref": "#/$defs/identifier" }
+      }
+    },
+    "inspectionRequest": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["auth", "pageSize"],
+      "properties": {
+        "auth": { "$ref": "#/$defs/auth" },
+        "pageSize": { "type": "integer", "minimum": 1, "maximum": 128 },
+        "cursor": { "$ref": "#/$defs/identifier" }
+      }
+    },
+    "captureRequest": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["auth", "mode", "maxWidth", "maxHeight"],
+      "properties": {
+        "auth": { "$ref": "#/$defs/auth" },
+        "mode": { "enum": ["viewport", "workbench", "rendered"] },
+        "maxWidth": { "type": "integer", "minimum": 1, "maximum": 4096 },
+        "maxHeight": { "type": "integer", "minimum": 1, "maximum": 4096 }
+      }
+    },
+    "restoreRequest": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["auth", "checkpointId", "preconditions"],
+      "properties": {
+        "auth": { "$ref": "#/$defs/auth" },
+        "checkpointId": { "$ref": "#/$defs/identifier" },
+        "preconditions": { "$ref": "#/$defs/preconditions" }
+      }
+    },
+    "acceptedOperation": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["operationId", "state"],
+      "properties": {
+        "operationId": { "$ref": "#/$defs/identifier" },
+        "state": { "$ref": "#/$defs/operationState" }
+      }
+    },
+    "operationStatus": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["operationId", "state"],
+      "properties": {
+        "operationId": { "$ref": "#/$defs/identifier" },
+        "state": { "$ref": "#/$defs/operationState" },
+        "cancellation": { "$ref": "#/$defs/cancellationState" },
+        "job": { "$ref": "#/$defs/job" }
+      }
+    },
+    "acknowledgement": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["accepted"],
+      "properties": { "accepted": { "type": "boolean" } }
+    },
+    "outcome": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["operationId", "state"],
+      "properties": {
+        "operationId": { "$ref": "#/$defs/identifier" },
+        "state": { "$ref": "#/$defs/operationState" },
+        "receipt": { "$ref": "#/$defs/receipt" }
+      }
+    },
+    "checkpointList": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["checkpoints", "nextCursor"],
+      "properties": {
+        "checkpoints": {
+          "type": "array",
+          "maxItems": 128,
+          "items": { "$ref": "#/$defs/checkpoint" }
+        },
+        "nextCursor": { "type": ["string", "null"], "maxLength": 128 }
+      }
+    },
+    "trustEvent": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["sessionId", "trust"],
+      "properties": {
+        "sessionId": { "$ref": "#/$defs/identifier" },
+        "trust": { "$ref": "#/$defs/trust" }
+      }
+    }
+  },
+  "$ref": "#/$defs/envelope"
+}

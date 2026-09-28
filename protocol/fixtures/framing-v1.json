@@ -1,0 +1,55 @@
+{
+  "version": 1,
+  "maxFrameBytes": 1048576,
+  "format": "wireHex is exact wire bytes; readSizes split successive socket reads and the remaining bytes form the final read. eof closes the input.",
+  "accepted": [
+    {
+      "name": "split-header-and-payload",
+      "wireHex": "0000003c7b226a736f6e727063223a22322e30222c226964223a312c226d6574686f64223a226272696467652e68656c6c6f222c22706172616d73223a7b7d7d",
+      "readSizes": [1, 1, 2, 7, 11],
+      "messages": [{ "jsonrpc": "2.0", "id": 1, "method": "bridge.hello", "params": {} }]
+    },
+    {
+      "name": "combined-notification-and-response",
+      "wireHex": "000000327b226a736f6e727063223a22322e30222c226d6574686f64223a226576656e742e6c6f67222c22706172616d73223a7b7d7d000000247b226a736f6e727063223a22322e30222c226964223a322c22726573756c74223a7b7d7d",
+      "readSizes": [],
+      "messages": [
+        { "jsonrpc": "2.0", "method": "event.log", "params": {} },
+        { "jsonrpc": "2.0", "id": 2, "result": {} }
+      ]
+    },
+    {
+      "name": "utf8-multibyte-length-is-byte-count",
+      "wireHex": "0000004a7b226a736f6e727063223a22322e30222c226964223a332c226d6574686f64223a226272696467652e68656c6c6f222c22706172616d73223a7b226e6f7465223a22636166c3a9227d7d",
+      "readSizes": [4, 68],
+      "messages": [
+        { "jsonrpc": "2.0", "id": 3, "method": "bridge.hello", "params": { "note": "café" } }
+      ]
+    }
+  ],
+  "rejected": [
+    { "name": "zero-length", "wireHex": "00000000", "error": "INVALID_FRAME" },
+    { "name": "oversized-length-before-payload", "wireHex": "00100001", "error": "INVALID_FRAME" },
+    { "name": "unsigned-max-length", "wireHex": "ffffffff", "error": "INVALID_FRAME" },
+    { "name": "short-header-at-eof", "wireHex": "000000", "eof": true, "error": "INVALID_FRAME" },
+    {
+      "name": "short-payload-at-eof",
+      "wireHex": "00000005617b",
+      "eof": true,
+      "error": "INVALID_FRAME"
+    },
+    { "name": "invalid-utf8", "wireHex": "00000002c328", "error": "INVALID_JSON" },
+    { "name": "invalid-json", "wireHex": "000000017b", "error": "INVALID_JSON" },
+    { "name": "invalid-jsonrpc-envelope", "wireHex": "000000027b7d", "error": "INVALID_REQUEST" },
+    {
+      "name": "duplicate-json-key",
+      "wireHex": "0000002b7b226a736f6e727063223a22322e30222c226964223a312c226964223a322c22726573756c74223a7b7d7d",
+      "error": "INVALID_JSON"
+    },
+    {
+      "name": "response-with-result-and-error",
+      "wireHex": "0000002f7b226a736f6e727063223a22322e30222c226964223a352c22726573756c74223a7b7d2c226572726f72223a7b7d7d",
+      "error": "INVALID_REQUEST"
+    }
+  ]
+}

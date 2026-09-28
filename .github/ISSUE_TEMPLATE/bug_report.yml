@@ -1,0 +1,27 @@
+name: Bug report
+description: Report a non-sensitive reproducible bug (security issues must be private).
+labels: [bug]
+body:
+  - type: markdown
+    attributes:
+      value: "Do not include credentials, private scenes, exploit details, or customer data. For security issues see SECURITY.md. This project is pre-release."
+  - type: input
+    id: versions
+    attributes:
+      label: Blender, Pi, package, and OS versions
+      placeholder: "Blender 5.2.2; Pi version; Linux x64 or Windows x64"
+    validations:
+      required: true
+  - type: textarea
+    id: reproduction
+    attributes:
+      label: Minimal reproduction
+      description: Use a disposable scene and sanitize logs.
+    validations:
+      required: true
+  - type: textarea
+    id: expected
+    attributes:
+      label: Expected versus actual behavior
+    validations:
+      required: true

@@ -1,3 +1,7 @@
-// No control path is enabled until the authenticated bridge is implemented.
-// Loading this package must not start Blender or modify the user's workstation.
-export default function blenderPi(): void {}
+// Loading this package must not start Blender, open a socket, or modify the workstation.
+import type { ExtensionAPI } from "@earendil-works/pi-coding-agent";
+import { registerBlenderExtension } from "./host.ts";
+
+export default function blenderPi(pi: ExtensionAPI): void {
+  registerBlenderExtension(pi);
+}

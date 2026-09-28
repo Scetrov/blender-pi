@@ -1,0 +1,14 @@
+{
+  "description": "Initial deterministic typo check (not a full dictionary spellchecker). Extend with reviewed terms as the project grows.",
+  "typos": {
+    "authentification": "authentication",
+    "compatability": "compatibility",
+    "dependancy": "dependency",
+    "dependancies": "dependencies",
+    "occured": "occurred",
+    "recieve": "receive",
+    "seperate": "separate",
+    "telemtry": "telemetry",
+    "verfication": "verification"
+  }
+}

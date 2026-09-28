@@ -1,0 +1,15 @@
+# Component licenses and distribution
+
+**Maintainer decision:** the Blender extension under `bridge/` is **GPL-3.0-only** (SPDX `GPL-3.0-only`); the independently running Pi-side extension, skills, shared wire contracts and documentation are **MIT** (SPDX `MIT`). Root `LICENSE` covers MIT material; `bridge/LICENSE` and bridge source headers/notices must make the GPL boundary unambiguous. The npm package's top-level `license: MIT` describes its Pi package code, **not** an override of the bundled bridge's GPL license. Packaged bridge archives and source distributions must include the applicable GPL notice and complete corresponding source; the npm package and GitHub release must include both component notices and a clear license map. Audit the actual tarball and extension archive before release. This is a planned packaging rule; no artifacts are published yet.
+
+The GPL bridge is deliberately thin: Blender-only UI, pairing and trust enforcement, protocol handling, main-thread `bpy` scheduling, policy/undo/checkpoints, scene inspection and artifact creation remain Blender-side for safety; the Pi agent supplies workflow guidance and UX. Moving Blender-side authorization or recovery enforcement into MIT Pi code solely to minimize GPL source would undermine the trust boundary. The shared JSON wire schemas can remain MIT and must not copy Blender implementation code.
+
+Blender's [license page](https://www.blender.org/about/license/) and [FAQ](https://www.blender.org/support/faq/) describe GPL obligations for published `bpy` scripts. The [Blender 5.2 Extensions Platform policy](https://docs.blender.org/manual/en/5.2/advanced/extensions/licenses.html) requires GPL-3.0-or-later for marketplace add-ons; this project **does not** target that marketplace. MIT is [listed by the FSF as GPL-compatible](https://www.gnu.org/licenses/license-list.html#Expat), but the project does not rely on MIT-only licensing for its distributed Blender extension. Publishing through npm/pi.dev is distribution even without a sale. No Blender binaries or copied Blender source are planned in project packages.
+
+## Third-party material
+
+- The Blender extension is planned to use Blender's installed `bpy` and the Python standard library only. If Blender binaries or third-party code are later bundled, reassess their licensing and source/notice obligations.
+- Before adding dependencies, check exact version, provenance, integrity, license, maintenance, advisories and transitive notices. `docs/dependencies.md` records the first proposed set; preserve required notices in release artifacts.
+- No third-party assets are currently included. “Royalty-free” is not a license identifier or evidence of redistribution rights. Before bundling any asset, record its source, exact license, attribution, redistribution/modification rights and whether it is integral to the add-on. Do not reclassify code as an asset. Marketplace-specific CC0 requirements do not apply to this excluded distribution channel but must be re-evaluated before any future submission.
+
+This records the licensing policy, not a legal opinion for future combinations with third-party code or assets.

@@ -1,0 +1,19 @@
+name: Feature request
+description: Propose a bounded artist-led workflow or bridge improvement.
+labels: [enhancement]
+body:
+  - type: markdown
+    attributes:
+      value: "Check OpenSpec tasks first. Do not post private project data or vulnerabilities."
+  - type: textarea
+    id: use_case
+    attributes:
+      label: Artist problem and desired outcome
+    validations:
+      required: true
+  - type: textarea
+    id: risks
+    attributes:
+      label: Trust, undo, checkpoint and platform considerations
+    validations:
+      required: true

@@ -1,0 +1,14 @@
+# Local-only hooks avoid downloading mutable third-party hook repositories.
+repos:
+  - repo: local
+    hooks:
+      - id: validate
+        name: package validation
+        entry: npm run validate
+        language: system
+        pass_filenames: false
+      - id: spelling
+        name: project typo check
+        entry: python3 scripts/check_spelling.py
+        language: system
+        pass_filenames: false

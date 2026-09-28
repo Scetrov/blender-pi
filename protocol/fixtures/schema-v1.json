@@ -1,0 +1,291 @@
+{
+  "version": 1,
+  "format": "schema names address v1.json#/$defs; expectedCode is the pre-dispatch outcome. contextual cases require the listed connection/secret context in addition to JSON Schema.",
+  "accepted": [
+    {
+      "name": "minimal-request-envelope",
+      "schema": "envelope",
+      "value": { "jsonrpc": "2.0", "id": 1, "method": "bridge.hello", "params": {} }
+    },
+    {
+      "name": "compatible-handshake-shape",
+      "schema": "handshake",
+      "value": {
+        "protocolVersion": "1.0",
+        "packageVersion": "0.0.0",
+        "bridgeVersion": "0.0.0",
+        "blenderVersion": "5.2.2",
+        "bridgeId": "bridge1",
+        "pairingId": "abcdef0123456789abcdef0123456789",
+        "pairingExpiresAt": "2026-09-26T00:03:00Z",
+        "maxFrameBytes": 1048576,
+        "capabilities": ["framingV1"]
+      }
+    },
+    {
+      "name": "bounded-local-diagnostics",
+      "schema": "diagnostics",
+      "value": {
+        "bridgeId": "bridge1",
+        "protocolVersion": "1.0",
+        "maxFrameBytes": 1048576,
+        "capabilities": ["framingV1"],
+        "listener": "listening",
+        "ioProcess": "running",
+        "queueDepth": 0,
+        "dispatcher": "blocked",
+        "trust": "inspection",
+        "recentErrors": []
+      }
+    },
+    {
+      "name": "bounded-inspection-preconditions",
+      "schema": "preconditions",
+      "value": {
+        "fileGeneration": 3,
+        "sessionGeneration": 4,
+        "targetId": "obj1",
+        "mode": "OBJECT",
+        "selectedIds": ["obj1"]
+      }
+    },
+    {
+      "name": "validated-execution-with-scoped-context",
+      "schema": "execution",
+      "value": {
+        "auth": { "sessionId": "session1", "credential": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa" },
+        "summary": "Add a review marker",
+        "declaredRisk": "low",
+        "expectedEffects": [{ "category": "scene", "description": "Add marker object" }],
+        "undoPreference": "required",
+        "checkpointPolicy": "automatic",
+        "code": "pass",
+        "idempotencyKey": "marker1",
+        "preconditions": {
+          "fileGeneration": 1,
+          "sessionGeneration": 2,
+          "mode": "OBJECT",
+          "selectedIds": []
+        }
+      }
+    },
+    {
+      "name": "structured-error-no-credential",
+      "schema": "rpcError",
+      "value": {
+        "code": -32602,
+        "message": "Invalid parameters",
+        "data": {
+          "code": "INVALID_PARAMS",
+          "correlationId": "corr1",
+          "details": { "field": "summary" }
+        }
+      }
+    }
+  ],
+  "rejected": [
+    {
+      "name": "missing-jsonrpc",
+      "schema": "envelope",
+      "value": { "id": 1, "method": "bridge.hello", "params": {} },
+      "expectedCode": "INVALID_REQUEST"
+    },
+    {
+      "name": "extra-envelope-key",
+      "schema": "envelope",
+      "value": {
+        "jsonrpc": "2.0",
+        "id": 1,
+        "method": "bridge.hello",
+        "params": {},
+        "credential": "do-not-echo"
+      },
+      "expectedCode": "INVALID_REQUEST"
+    },
+    {
+      "name": "wrong-jsonrpc-version",
+      "schema": "envelope",
+      "value": { "jsonrpc": "1.0", "id": 1, "method": "bridge.hello", "params": {} },
+      "expectedCode": "INVALID_REQUEST"
+    },
+    {
+      "name": "missing-handshake-capabilities",
+      "schema": "handshake",
+      "value": {
+        "protocolVersion": "1.0",
+        "packageVersion": "0.0.0",
+        "bridgeVersion": "0.0.0",
+        "blenderVersion": "5.2.2",
+        "bridgeId": "bridge1",
+        "maxFrameBytes": 1048576
+      },
+      "expectedCode": "INVALID_PARAMS"
+    },
+    {
+      "name": "oversized-negotiated-frame",
+      "schema": "handshake",
+      "value": {
+        "protocolVersion": "1.0",
+        "packageVersion": "0.0.0",
+        "bridgeVersion": "0.0.0",
+        "blenderVersion": "5.2.2",
+        "bridgeId": "bridge1",
+        "maxFrameBytes": 1048577,
+        "capabilities": []
+      },
+      "expectedCode": "INVALID_PARAMS"
+    },
+    {
+      "name": "unknown-handshake-field",
+      "schema": "handshake",
+      "value": {
+        "protocolVersion": "1.0",
+        "packageVersion": "0.0.0",
+        "bridgeVersion": "0.0.0",
+        "blenderVersion": "5.2.2",
+        "bridgeId": "bridge1",
+        "maxFrameBytes": 4096,
+        "capabilities": [],
+        "admin": true
+      },
+      "expectedCode": "INVALID_PARAMS"
+    },
+    {
+      "name": "missing-diagnostics-protocol-version",
+      "schema": "diagnostics",
+      "value": {
+        "bridgeId": "bridge1",
+        "maxFrameBytes": 1048576,
+        "capabilities": ["framingV1"],
+        "listener": "listening",
+        "ioProcess": "running",
+        "queueDepth": 0,
+        "dispatcher": "blocked",
+        "trust": "inspection",
+        "recentErrors": []
+      },
+      "expectedCode": "INVALID_PARAMS"
+    },
+    {
+      "name": "missing-file-generation",
+      "schema": "preconditions",
+      "value": { "sessionGeneration": 4 },
+      "expectedCode": "INVALID_PARAMS"
+    },
+    {
+      "name": "negative-file-generation",
+      "schema": "preconditions",
+      "value": { "fileGeneration": -1, "sessionGeneration": 4 },
+      "expectedCode": "INVALID_PARAMS"
+    },
+    {
+      "name": "execution-missing-mode-precondition",
+      "schema": "execution",
+      "value": {
+        "auth": { "sessionId": "session1", "credential": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa" },
+        "summary": "Add a review marker",
+        "declaredRisk": "low",
+        "expectedEffects": [{ "category": "scene", "description": "Add marker object" }],
+        "undoPreference": "required",
+        "checkpointPolicy": "automatic",
+        "code": "pass",
+        "idempotencyKey": "marker1",
+        "preconditions": { "fileGeneration": 1, "sessionGeneration": 2, "selectedIds": [] }
+      },
+      "expectedCode": "INVALID_PARAMS"
+    },
+    {
+      "name": "unbounded-error-message",
+      "schema": "rpcError",
+      "value": {
+        "code": -32603,
+        "message": "",
+        "data": { "code": "INTERNAL_ERROR", "correlationId": "corr1" }
+      },
+      "expectedCode": "INVALID_PARAMS"
+    },
+    {
+      "name": "unsupported-major",
+      "schema": "handshake",
+      "context": { "supportedProtocolMajor": 1 },
+      "value": {
+        "protocolVersion": "2.0",
+        "packageVersion": "0.0.0",
+        "bridgeVersion": "0.0.0",
+        "blenderVersion": "5.2.2",
+        "bridgeId": "bridge1",
+        "maxFrameBytes": 4096,
+        "capabilities": []
+      },
+      "expectedCode": "UNSUPPORTED_VERSION"
+    },
+    {
+      "name": "missing-required-capability",
+      "schema": "handshake",
+      "context": { "requiredCapabilities": ["framingV1"] },
+      "value": {
+        "protocolVersion": "1.0",
+        "packageVersion": "0.0.0",
+        "bridgeVersion": "0.0.0",
+        "blenderVersion": "5.2.2",
+        "bridgeId": "bridge1",
+        "maxFrameBytes": 4096,
+        "capabilities": []
+      },
+      "expectedCode": "MISSING_CAPABILITY"
+    },
+    {
+      "name": "credential-in-error-details",
+      "schema": "rpcError",
+      "context": { "secrets": ["redact_this_credential_0123456789abcdef"] },
+      "value": {
+        "code": -32603,
+        "message": "Internal error",
+        "data": {
+          "code": "INTERNAL_ERROR",
+          "correlationId": "corr1",
+          "details": { "debug": "redact_this_credential_0123456789abcdef" }
+        }
+      },
+      "expectedCode": "INVALID_PARAMS"
+    },
+    {
+      "name": "credential-in-receipt-warning",
+      "schema": "warning",
+      "context": { "secrets": ["redact_this_credential_0123456789abcdef"] },
+      "value": {
+        "operationId": "op1",
+        "sequence": 1,
+        "code": "unsafe",
+        "message": "redact_this_credential_0123456789abcdef"
+      },
+      "expectedCode": "INVALID_PARAMS"
+    }
+  ],
+  "errorOutcomes": [
+    { "code": "INVALID_FRAME", "rpcCode": -32700 },
+    { "code": "INVALID_JSON", "rpcCode": -32700 },
+    { "code": "INVALID_REQUEST", "rpcCode": -32600 },
+    { "code": "INVALID_PARAMS", "rpcCode": -32602 },
+    { "code": "METHOD_NOT_FOUND", "rpcCode": -32601 },
+    { "code": "UNSUPPORTED_VERSION", "rpcCode": -32000 },
+    { "code": "MISSING_CAPABILITY", "rpcCode": -32001 },
+    { "code": "PAIRING_REQUIRED", "rpcCode": -32002 },
+    { "code": "PAIRING_DENIED", "rpcCode": -32003 },
+    { "code": "PAIRING_EXPIRED", "rpcCode": -32004 },
+    { "code": "RATE_LIMITED", "rpcCode": -32005 },
+    { "code": "UNAUTHORIZED", "rpcCode": -32006 },
+    { "code": "STALE_PRECONDITION", "rpcCode": -32007 },
+    { "code": "IDEMPOTENCY_CONFLICT", "rpcCode": -32008 },
+    { "code": "OUTCOME_UNKNOWN", "rpcCode": -32009 },
+    { "code": "QUEUE_FULL", "rpcCode": -32010 },
+    { "code": "APPROVAL_DENIED", "rpcCode": -32011 },
+    { "code": "CHECKPOINT_FAILED", "rpcCode": -32012 },
+    { "code": "CANCELLED", "rpcCode": -32013 },
+    { "code": "SERIALIZATION_FAILED", "rpcCode": -32014 },
+    { "code": "EXECUTION_FAILED", "rpcCode": -32015 },
+    { "code": "ARTIFACT_INVALID", "rpcCode": -32016 },
+    { "code": "BRIDGE_UNAVAILABLE", "rpcCode": -32017 },
+    { "code": "INTERNAL_ERROR", "rpcCode": -32603 }
+  ]
+}

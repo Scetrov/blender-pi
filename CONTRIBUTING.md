@@ -1,0 +1,7 @@
+# Contributing
+
+This project is pre-release and has no public contribution queue yet. Before a change, check [OpenSpec progress](openspec/changes/establish-blender-pi-package/tasks.md) and discuss scope with the maintainer. Submit small, reviewable changes with tests and documentation; avoid claiming features work until real Blender 5.2 integration has verified them.
+
+Use Node.js >=22.19 and a verified Blender 5.2 archive for integration work. Run `npm ci --ignore-scripts` and `npm run validate` for current scaffold checks. Blender-side code must avoid persistent Python threads and call `bpy` only from Blender's main thread. Never commit credentials, private scenes, sample customer files, cache files, generated archives, or uncontrolled third-party assets. Review dependency license, version, integrity and source before introducing it. Follow [component licenses](docs/licensing.md): Pi-side contributions are MIT and `bridge/` contributions are GPL-3.0-only. By contributing, you must have the right to submit your work under the applicable component license; no copyright assignment is currently required.
+
+Use signed conventional commits where practical and describe test coverage and risk in a pull request. Reviewers may request a reproduction or evidence for security/compatibility claims. Security issues must use the [private path](SECURITY.md), never a public issue. The maintainer retains merge/release authority; see [governance](GOVERNANCE.md) and [conduct](CODE_OF_CONDUCT.md).

@@ -1,0 +1,40 @@
+name: Skill validation
+on:
+  push:
+  pull_request:
+permissions:
+  contents: read
+jobs:
+  skills:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      # actions/checkout v6.1.0, verified from GitHub tag ref
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803
+        with:
+          persist-credentials: false
+      - name: Validate frontmatter, links, discovery paths and syntax
+        run: python3 scripts/validate_skills.py
+      - name: Verify package contains skill entries and references
+        run: |
+          npm pack --ignore-scripts --json > /tmp/blender-pi-pack.json
+          python3 - <<'PY'
+          import json
+          from pathlib import Path
+          package = json.loads(Path('/tmp/blender-pi-pack.json').read_text())[0]
+          names = {p.parent.name for p in Path('skills').glob('*/SKILL.md')}
+          packed = {f['path'] for f in package['files']}
+          for name in names:
+              assert f'skills/{name}/SKILL.md' in packed, name
+              assert f'skills/{name}/references/examples.md' in packed, name
+          print('PACKAGED_SKILLS_OK')
+          PY
+      - name: Acquire official Blender 5.2.2 archive with pinned SHA-256
+        run: |
+          python3 scripts/acquire_blender.py linux-x64 /tmp/blender-test
+      - name: Validate Blender 5.2 APIs used by read-only examples
+        run: |
+          HOME="$(mktemp -d)" /tmp/blender-test/blender-5.2.2-linux-x64/blender-5.2.2-linux-x64/blender \
+            -b --factory-startup --python scripts/validate_skills.py -- --blender \
+            > /tmp/skill-blender.log 2>&1
+          grep -Fx 'BLENDER_SKILLS_OK' /tmp/skill-blender.log

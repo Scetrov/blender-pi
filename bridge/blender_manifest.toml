@@ -1,0 +1,13 @@
+schema_version = "1.0.0"
+id = "blender_pi"
+version = "0.0.0"
+name = "Blender Pi Bridge"
+tagline = "Artist-approved local bridge for Pi automation"
+maintainer = "scetrov"
+type = "add-on"
+blender_version_min = "5.2.0"
+license = ["SPDX:GPL-3.0-only"]
+platforms = ["linux-x64", "windows-x64"]
+
+[build]
+paths_exclude_pattern = ["__pycache__/", "*.pyc", "*.blend", "*.blend1", "*.zip", ".generated-by-blender-pi"]
