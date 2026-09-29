@@ -156,7 +156,7 @@ def generate(root, output, commit, epoch):
         write_metadata(output / sbom_name, json.dumps(document, indent=2, sort_keys=True) + "\n")
         artifacts.append({"name": name, "sha256": checksum, "sbom": sbom_name})
     metadata = {"schema": "blender-pi-compatibility/1", "version": version,
-                "sourceCommit": commit, "protocolMajor": 1,
+                "sourceTag": "v" + version, "sourceCommit": commit, "protocolMajor": 1,
                 "blenderVersionMin": bridge["blender_version_min"],
                 "platforms": bridge["platforms"], "artifacts": artifacts}
     write_metadata(output / "compatibility.json", json.dumps(metadata, indent=2, sort_keys=True) + "\n")

@@ -46,6 +46,7 @@ class ReleaseMetadataTests(unittest.TestCase):
         metadata = self.generate()
         first = {path.name: path.read_bytes() for path in self.output.iterdir()}
         self.assertEqual(metadata["sourceCommit"], "a" * 40)
+        self.assertEqual(metadata["sourceTag"], "v1.2.3")
         self.assertEqual(metadata["platforms"], ["linux-x64", "windows-x64"])
         self.assertEqual(len((self.output / "SHA256SUMS").read_text().splitlines()), 5)
         sbom = json.loads((self.output / "blender_pi-1.2.3.zip.spdx.json").read_text())

@@ -156,7 +156,7 @@
 - [x] 11.5 Add representative artist-workflow tests spanning object generation, geometry nodes, materials and shading, animation, and rendering against Blender 5.2.
 - [x] 11.6 Add performance and responsiveness checks for idle polling, message framing, large-scene inspection, queue processing, progress volume, and artifact limits.
 - [ ] 11.7 Run static analysis, CodeQL where applicable, dependency review, vulnerability scanning, secret scanning, license checks, Scorecard, package audit, and Blender extension validation; resolve or explicitly document all findings.
-- [x] 11.8 Verify that the working tree remains reproducible after full validation and that generated artifacts are either ignored or produced only in documented output directories.
+- [ ] 11.8 Verify that the working tree remains reproducible after full validation and that generated artifacts are either ignored or produced only in documented output directories.
 
 ## 12. Prepare and Verify the Initial Release
 
@@ -167,6 +167,6 @@
 - [x] 12.5 Complete README, installation, secure-use, privacy, threat-model, architecture, protocol, pairing, recovery, compatibility, contribution, and release documentation from tested behavior.
 - [x] 12.6 Perform a truthful OpenSSF Best Practices assessment, validate `.bestpractices.json`, run OpenSSF Scorecard as supporting evidence, and record repository-setting or human-attestation follow-ups without overstating status.
 - [x] 12.7 Review the complete change against every OpenSpec scenario and record test or evidence coverage for each requirement.
-- [x] 12.8 Run configured pre-commit checks explicitly, install the hook with `pre-commit install` if it is not active, and resolve all repository validation failures.
+- [ ] 12.8 Run configured pre-commit checks explicitly, install the hook with `pre-commit install` if it is not active, and resolve all repository validation failures.
 - [x] 12.9 Prepare a separate release checklist requiring signed release approval before publication and subsequent verification of npm installation, pi.dev gallery discovery, GitHub artifact integrity, provenance, SBOMs, checksums, and documented compatibility from public artifacts; publication and post-publication verification are not implementation-archive prerequisites.
 - [ ] 12.10 Archive the completed implementation change after pre-publication acceptance and before the final signed conventional commit and pull request, preserving Agent and Model attribution trailers within repository line-length limits. Do not claim the separate release checklist is completed merely because this change is archived.
