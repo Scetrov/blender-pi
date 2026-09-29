@@ -9,8 +9,13 @@ jobs:
     uses: ./.github/workflows/validation.yml
     permissions:
       contents: read
+  codeql:
+    uses: ./.github/workflows/codeql.yml
+    permissions:
+      contents: read
+      security-events: write
   candidate:
-    needs: validate
+    needs: [validate, codeql]
     runs-on: ubuntu-24.04
     timeout-minutes: 30
     permissions:

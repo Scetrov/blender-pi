@@ -52,8 +52,10 @@ def verify(root=Path("."), environment=None):
     target_oid = command("git", "rev-parse", "refs/tags/" + tag + "^{commit}")
     if not all(SHA_PATTERN.fullmatch(x) for x in (tag_oid, head_oid, target_oid)):
         raise ValueError("Invalid Git object identifier")
-    if tag_oid != env.get("GITHUB_SHA") or head_oid != target_oid or tag_oid == target_oid:
-        raise ValueError("Checkout, signed tag object and event SHA do not match")
+    # On a GitHub push of an annotated tag, GITHUB_SHA is the peeled tip commit,
+    # not the tag object. Check the tag object separately against the REST ref.
+    if head_oid != env.get("GITHUB_SHA") or head_oid != target_oid or tag_oid == target_oid:
+        raise ValueError("Checkout, signed tag target and event commit do not match")
     reference = api(f"repos/{REPOSITORY}/git/ref/tags/{tag}")
     if reference.get("object", {}).get("type") != "tag" or reference["object"].get("sha") != tag_oid:
         raise ValueError("Remote ref is not the expected annotated tag")

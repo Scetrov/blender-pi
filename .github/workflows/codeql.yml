@@ -5,6 +5,7 @@ on:
     branches: [main, 'work/**']
   pull_request:
     branches: [main]
+  workflow_call:
   schedule:
     - cron: '23 4 * * 1'
 
