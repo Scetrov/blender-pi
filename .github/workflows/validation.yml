@@ -2,6 +2,7 @@ name: Cross-platform validation
 on:
   push:
   pull_request:
+  workflow_call:
 permissions:
   contents: read
 jobs:
@@ -89,3 +90,16 @@ jobs:
           else
             "$TEST_PYTHON" scripts/run_blender_smoke.py "$RUNNER_TEMP/blender-test" "$TEST_PLATFORM" "$TEST_BLENDER"
           fi
+      - name: Build and install/uninstall both release archives in private profiles
+        shell: bash
+        env:
+          TEST_PLATFORM: ${{ matrix.platform }}
+          TEST_PYTHON: ${{ matrix.python }}
+          TEST_BLENDER: ${{ matrix.blender }}
+        run: |
+          npm run release:build
+          version="$(node -p 'require("./package.json").version')"
+          "$TEST_PYTHON" scripts/verify_release_install.py \
+            --archive "dist/release/blender_pi-${version}.zip" \
+            --package "dist/release/scetrov-blender-pi-${version}.tgz" \
+            --fixture "$RUNNER_TEMP/blender-test" --platform "$TEST_PLATFORM" --executable "$TEST_BLENDER"
